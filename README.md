@@ -1,0 +1,2 @@
+# ebmused
+EarthBound Music Editor
