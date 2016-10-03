@@ -1,0 +1,136 @@
+#include "id.h"
+#include <winuser.h>
+
+1 ICON record.ico
+
+IDM_MENU MENU
+BEGIN
+	POPUP "&File"
+	BEGIN
+		MENUITEM "&Open ROM...\tCtrl+O", ID_OPEN
+		MENUITEM "&Save All\tCtrl+S", ID_SAVE_ALL, GRAYED
+		MENUITEM "&Close", ID_CLOSE, GRAYED
+		MENUITEM SEPARATOR
+		MENUITEM "&Import Song...", ID_IMPORT//, GRAYED
+//		MENUITEM "Import from .S&PC...", ID_IMPORT_SPC
+		MENUITEM "&Export Song...", ID_EXPORT//, GRAYED
+		MENUITEM SEPARATOR
+		MENUITEM "E&xit", ID_EXIT
+	END
+	POPUP "&Edit"
+	BEGIN
+//		MENUITEM "&Undo\tCtrl+Z", ID_UNDO, GRAYED
+//		MENUITEM SEPARATOR
+		MENUITEM "Cu&t\tCtrl+X", ID_CUT, GRAYED
+		MENUITEM "&Copy\tCtrl+C", ID_COPY, GRAYED
+		MENUITEM "&Paste\tCtrl+V", ID_PASTE, GRAYED
+		MENUITEM "&Delete\tDel", ID_DELETE, GRAYED
+		MENUITEM SEPARATOR
+		MENUITEM "&Split Pattern", ID_SPLIT_PATTERN, GRAYED
+		MENUITEM "&Join Patterns", ID_JOIN_PATTERNS, GRAYED
+		MENUITEM "&Make Subroutine", ID_MAKE_SUBROUTINE, GRAYED
+		MENUITEM "U&nmake Subroutine", ID_UNMAKE_SUBROUTINE, GRAYED
+		MENUITEM "T&ranspose...", ID_TRANSPOSE, GRAYED
+	END
+	POPUP "&Options"
+	BEGIN
+		MENUITEM "&Sound Options...", ID_OPTIONS
+	END
+	POPUP "&Song"
+	BEGIN
+		MENUITEM "&Play\tCtrl+P", ID_PLAY
+		MENUITEM "&Stop\tEsc", ID_STOP
+		MENUITEM SEPARATOR
+		MENUITEM "&Clear", ID_CLEAR_SONG, GRAYED
+	END
+	POPUP "&View"
+	BEGIN
+		MENUITEM "Zoom &In\tCtrl+N", ID_ZOOM_IN, GRAYED
+		MENUITEM "Zoom &Out\tCtrl+M", ID_ZOOM_OUT, GRAYED
+	END
+	POPUP "O&ctave"
+	BEGIN
+		MENUITEM "1-2\tF1", ID_OCTAVE_1
+		MENUITEM "2-3\tF2", ID_OCTAVE_1+1
+		MENUITEM "3-4\tF3", ID_OCTAVE_1+2
+		MENUITEM "4-5\tF4", ID_OCTAVE_1+3
+		MENUITEM "5-6\tF5", ID_OCTAVE_1+4
+	END
+	POPUP "&Help"
+	BEGIN
+		MENUITEM "&Code List", ID_HELP
+		MENUITEM SEPARATOR
+		MENUITEM "&About", ID_ABOUT
+	END
+END
+
+IDM_CONTEXTMENU MENU
+BEGIN
+	POPUP ""
+	BEGIN
+		MENUITEM "Cu&t", ID_CUT
+		MENUITEM "&Copy", ID_COPY
+		MENUITEM "&Paste", ID_PASTE
+		MENUITEM "&Delete", ID_DELETE
+		MENUITEM SEPARATOR
+		MENUITEM "&Make Subroutine", ID_MAKE_SUBROUTINE
+		MENUITEM "U&nmake Subroutine", ID_UNMAKE_SUBROUTINE
+		MENUITEM "T&ranspose...", ID_TRANSPOSE
+	END
+END
+
+
+IDA_ACCEL ACCELERATORS
+BEGIN
+	VK_ESCAPE, ID_STOP, VIRTKEY
+	VK_F1, ID_OCTAVE_1, VIRTKEY
+	VK_F2, ID_OCTAVE_1+1, VIRTKEY
+	VK_F3, ID_OCTAVE_1+2, VIRTKEY
+	VK_F4, ID_OCTAVE_1+3, VIRTKEY
+	VK_F5, ID_OCTAVE_1+4, VIRTKEY
+	"O", ID_OPEN, CONTROL, VIRTKEY
+	"P", ID_PLAY, CONTROL, VIRTKEY
+	"S", ID_SAVE_ALL, CONTROL, VIRTKEY
+	"M", ID_ZOOM_OUT, CONTROL, VIRTKEY
+	"N", ID_ZOOM_IN, CONTROL, VIRTKEY
+//	"Z", ID_UNDO, CONTROL, VIRTKEY
+END
+
+IDD_OPTIONS DIALOG 0, 0, 115, 62
+STYLE 0
+CAPTION "Sound options"
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT "Sampling rate:", 0,        5,  5, 50, 14
+	EDITTEXT IDC_RATE,               60,  5, 35, 14, ES_RIGHT | ES_NUMBER
+	LTEXT "Hz", 0,                  100,  5, 10, 14
+	LTEXT "Buffer size:", 0,          5, 24, 50, 14
+	EDITTEXT IDC_BUFSIZE,            60, 24, 35, 14, ES_RIGHT | ES_NUMBER
+	DEFPUSHBUTTON "&OK", IDOK,        5, 43, 50, 14
+	PUSHBUTTON "&Cancel", IDCANCEL,  60, 43, 50, 14
+END
+
+IDD_ABOUT DIALOG 0, 0, 200, 70
+STYLE 0
+CAPTION "About EB Music Editor"
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT "EarthBound Music Editor v2.204: released 2015-10-31\r\n"
+	      "Programmed by Goplat\r\n"
+		  "Additional programming by BlueStone\r\n"
+		  "\r\n"
+		  "Default BGM titles based on 4F90A.txt by Michael1\r\n", 0,
+	                                                  5, 5, 190, 55
+	DEFPUSHBUTTON "&OK", IDOK,                        145, 51, 50, 14
+END
+
+IDD_TRANSPOSE DIALOG 0, 0, 115, 43
+STYLE 0
+CAPTION "Transpose selection"
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT "Change:", 0,               5,  5, 50, 14
+	EDITTEXT IDC_TRANSPOSE_OFF,      60,  5, 50, 14
+	DEFPUSHBUTTON "&OK", IDOK,        5, 24, 50, 14
+	PUSHBUTTON "&Cancel", IDCANCEL,  60, 24, 50, 14
+END

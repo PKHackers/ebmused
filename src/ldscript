@@ -1,0 +1,11 @@
+SECTIONS {
+  /* 8-byte import stubs + 16-byte alignment = lots of blank space */
+  .text : SUBALIGN(8) { }
+  
+  /* Trim some bloat from the import table too
+   * See: http://sourceforge.net/tracker/index.php?func=detail&aid=1292097&group_id=2435&atid=102435
+   * for why the idata$7 stuff is there and why it's not really necessary.
+   * Apparently I'm the only one who cares, though */
+  .idata : SUBALIGN(1) { }
+  /DISCARD/ : { d*s?????.o(.idata$7) }
+}
