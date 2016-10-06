@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="ebmused" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/ebmused" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/ebmused" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-std=gnu99" />
+		</Compiler>
+		<Linker>
+			<Add library="gdi32" />
+			<Add library="user32" />
+			<Add library="kernel32" />
+			<Add library="libcomdlg32" />
+			<Add library="comctl32" />
+			<Add library="winmm" />
+		</Linker>
+		<Unit filename="../../src/bgmlist.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/brr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/ctrltbl.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/ebmusv2.h" />
+		<Unit filename="../../src/help.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/id.h" />
+		<Unit filename="../../src/inst.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/loadrom.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/metadata.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/midi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/misc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/packlist.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/packs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/parser.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/play.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/ranges.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/resource.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Unit filename="../../src/song.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/songed.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/sound.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/structs.h" />
+		<Unit filename="../../src/text.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/tracker.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
