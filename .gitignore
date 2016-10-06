@@ -35,3 +35,4 @@
 # CodeBlocks files
 *.layout
 /ide/codeblocks/obj/*
+*.depend
