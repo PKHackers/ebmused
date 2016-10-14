@@ -1,3 +1,4 @@
+#include <windows.h>
 #include "structs.h"
 
 #ifdef NDEBUG
@@ -14,7 +15,6 @@
 // other constants and stuff
 #define MAX_TITLE_LEN 60
 #define MAX_TITLE_LEN_STR "60"
-#define hinstance (HINSTANCE)0x400000
 #define WM_ROM_OPENED WM_USER
 #define WM_ROM_CLOSED WM_USER+1
 #define WM_SONG_IMPORTED WM_USER+2
@@ -29,6 +29,7 @@ extern int octave;
 extern int midiDevice;
 extern struct song cur_song;
 extern struct song_state pattop_state, state;
+extern HINSTANCE hinstance;
 extern HWND hwndMain;
 #ifdef CreateWindow
 extern HMENU hmenu, hcontextmenu;

@@ -8,7 +8,7 @@ struct area *areas;
 void init_areas() {
 	area_count = 2;
 	areas = malloc(sizeof(struct area) * 2);
-	areas[0].address = -2147483648;
+	areas[0].address = -2147483647 - 1;	// -1 so compilers like Visual Studio won't interpret the - as a unary operator
 	areas[0].pack = AREA_NOT_IN_FILE;
 	areas[1].address = 2147483647;
 	areas[1].pack = AREA_END;

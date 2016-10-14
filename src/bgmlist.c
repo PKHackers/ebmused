@@ -30,7 +30,7 @@
 #define IDC_CHANGE_BGM 41
 
 static int selected_bgm;
-static char bgm_num_text[] = "BGM --:";
+static char bgm_num_text[32] = "BGM --:";
 
 static const struct control_desc bgm_list_controls[] = {
 	{ "ListBox", 10, 10,300,-20, NULL, IDC_LIST, WS_BORDER | LBS_NOTIFY | WS_VSCROLL },

@@ -115,11 +115,7 @@ STYLE 0
 CAPTION "About EB Music Editor"
 FONT 8, "MS Shell Dlg"
 BEGIN
-	LTEXT "EarthBound Music Editor v2.204: released 2015-10-31\r\n"
-	      "Programmed by Goplat\r\n"
-		  "Additional programming by BlueStone\r\n"
-		  "\r\n"
-		  "Default BGM titles based on 4F90A.txt by Michael1\r\n", 0,
+	LTEXT "EarthBound Music Editor v2.204: released 2015-10-31\r\nProgrammed by Goplat\r\nAdditional programming by BlueStone\r\n\r\nDefault BGM titles based on 4F90A.txt by Michael1\r\n", 0,
 	                                                  5, 5, 190, 55
 	DEFPUSHBUTTON "&OK", IDOK,                        145, 51, 50, 14
 END

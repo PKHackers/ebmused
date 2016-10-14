@@ -1,3 +1,11 @@
+#ifdef _MSC_VER
+	#define _ARGC __argc
+	#define _ARGV __argv
+#else
+	#define _ARGC _argc
+	#define _ARGV _argv
+#endif
+
 #include "id.h"
 #include <io.h>
 #include <stdio.h>
@@ -14,6 +22,7 @@ int current_block = -1;
 struct song_state pattop_state, state;
 int octave = 2;
 int midiDevice = -1;
+HINSTANCE hinstance;
 HWND hwndMain;
 HMENU hmenu, hcontextmenu;
 HFONT hfont;
@@ -46,7 +55,7 @@ static const WNDPROC tab_wndproc[NUM_TABS] = {
 
 static char filename[MAX_PATH];
 static OPENFILENAME ofn;
-static char *open_dialog(BOOL WINAPI (*func)(LPOPENFILENAME),
+static char *open_dialog(BOOL (WINAPI *func)(LPOPENFILENAME),
 	char *filter, DWORD flags)
 {
 	*filename = '\0';
@@ -307,6 +316,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	LPSTR lpCmdLine, int nCmdShow)
 {
+	hinstance = hInstance;
 	WNDCLASS wc;
 	MSG msg;
 
@@ -373,8 +383,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	HACCEL hAccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDA_ACCEL));
 
-	if (_argc > 1)
-		open_rom(_argv[1], FALSE);
+	if (_ARGC > 1)
+		open_rom(_ARGV[1], FALSE);
 	tab_selected(0);
 
 	while (GetMessage(&msg, NULL, 0, 0) > 0) {

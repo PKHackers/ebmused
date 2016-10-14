@@ -34,5 +34,14 @@
 
 # CodeBlocks files
 *.layout
-/ide/codeblocks/obj/*
+obj/
 *.depend
+
+# Visual Studio 2015 files
+Debug/
+Release/
+x64/
+.vs/
+*.db
+*.opendb
+*.vcxproj.*
