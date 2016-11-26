@@ -47,14 +47,14 @@ void free_pack(struct pack *p) {
 void load_songpack(int new_pack) {
 	if (packs_loaded[2] == new_pack)
 		return;
-	
+
 	// Unload the current songpack unless it has been changed
 	if (packs_loaded[2] < NUM_PACKS) {
 		struct pack *old = &inmem_packs[packs_loaded[2]];
 		if (!(old->status & IPACK_CHANGED))
 			free_pack(old);
 	}
-	
+
 	packs_loaded[2] = new_pack;
 	if (new_pack >= NUM_PACKS)
 		return;
@@ -67,11 +67,11 @@ void load_songpack(int new_pack) {
 		mp->blocks = memcpy(malloc(mp->block_count * sizeof(struct block)),
 			rp->blocks, mp->block_count * sizeof(struct block));
 		struct block *b = mp->blocks;
-		fseek(rom, mp->start_address - 0xBFFE00, SEEK_SET);
+		fseek(rom, mp->start_address - 0xC00000 + rom_offset, SEEK_SET);
 		for (int i = 0; i < mp->block_count; i++) {
 			fseek(rom, 4, SEEK_CUR);
 			b->data = malloc(b->size);
-			fread(b->data, b->size, 1, rom);			
+			fread(b->data, b->size, 1, rom);
 			b++;
 		}
 		mp->status |= IPACK_INMEM;
@@ -89,7 +89,7 @@ struct block *get_cur_block() {
 
 void select_block(int block) {
 	current_block = block;
-	
+
 	free_song(&cur_song);
 
 	struct block *b = get_cur_block();
@@ -139,7 +139,7 @@ void new_block(struct block *b) {
 	int pos = 0;
 	while (pos < p->block_count && p->blocks[pos].spc_address <= b->spc_address)
 		pos++;
-	
+
 	struct block *newb = array_insert(&p->blocks, &p->block_count, sizeof(struct block), pos);
 	*newb = *b;
 	p->status |= IPACK_CHANGED;
@@ -174,7 +174,7 @@ BOOL save_pack(int pack) {
 	struct pack *rp = &rom_packs[pack];
 	if (!(p->status & IPACK_CHANGED))
 		return FALSE;
-	
+
 	if (!orig_rom) {
 		MessageBox2("Before saving a pack, the original rom file needs to be specified so that it can be used to ensure that no unused remnants of previous versions of the pack are left in the file in such a way that they would increase the patch size.", "Save", 48);
 		return FALSE;
@@ -193,28 +193,28 @@ BOOL save_pack(int pack) {
 		MessageBox2(error, "Save", 48/*MB_ICONEXCLAMATION*/);
 		return FALSE;
 	}
-	
+
 	int old_start = rp->start_address;
 	int old_size = calc_pack_size(rp);
 	BYTE *filler = malloc(old_size);
-	
-	fseek(orig_rom, old_start - 0xBFFE00, SEEK_SET);
+
+	fseek(orig_rom, old_start - 0xC00000 + orig_rom_offset, SEEK_SET);
 	if (!fread(filler, old_size, 1, orig_rom)) {
 error:
 		MessageBox2(strerror(errno), "Save", 16/*MB_ICONERROR*/);
 		return FALSE;
 	}
-	fseek(rom, old_start - 0xBFFE00, SEEK_SET);
+	fseek(rom, old_start - 0xC00000 + rom_offset, SEEK_SET);
 	if (!fwrite(filler, old_size, 1, rom))
 		goto error;
 	free(filler);
 
-	fseek(rom, PACK_POINTER_TABLE + 3*pack, SEEK_SET);
+	fseek(rom, PACK_POINTER_TABLE + rom_offset + 3*pack, SEEK_SET);
 	fputc(p->start_address >> 16, rom);
 	fputc(p->start_address, rom);
 	fputc(p->start_address >> 8, rom);
-	
-	fseek(rom, p->start_address - 0xBFFE00, SEEK_SET);
+
+	fseek(rom, p->start_address - 0xC00000 + rom_offset, SEEK_SET);
 	for (int i = 0; i < p->block_count; i++) {
 		struct block *b = &p->blocks[i];
 		if (!fwrite(b, 4, 1, rom))
@@ -237,12 +237,12 @@ error:
 
 	change_range(old_start, old_start + old_size, pack, AREA_FREE);
 	change_range(p->start_address, p->start_address + size, AREA_FREE, pack);
-	
+
 	if (pack != packs_loaded[2])
 		free_pack(p);
-	
+
 	// an SPC range that previously had no free blocks might have some now
 	metadata_changed = TRUE;
-	
+
 	return TRUE;
 }

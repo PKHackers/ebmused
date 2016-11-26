@@ -10,6 +10,7 @@ BOOL metadata_changed;
 static char md_filename[MAX_PATH+8];
 FILE *orig_rom;
 char *orig_rom_filename;
+int orig_rom_offset;
 
 const char *const bgm_orig_title[NUM_SONGS] = {
 	"Gas Station (Part 1, Changes cause SPC stall?)",
@@ -211,13 +212,15 @@ BOOL open_orig_rom(char *filename) {
 		MessageBox2(strerror(errno), filename, MB_ICONEXCLAMATION);
 		return FALSE;
 	}
-	if (_filelength(_fileno(f)) != rom_size) {
+	long size = _filelength(_fileno(f));
+	if (size != rom_size) {
 		MessageBox2("File is not same size as current ROM", filename, MB_ICONEXCLAMATION);
 		fclose(f);
 		return FALSE;
 	}
 	if (orig_rom) fclose(orig_rom);
 	orig_rom = f;
+	orig_rom_offset = size & 0x200;
 	free(orig_rom_filename);
 	orig_rom_filename = _strdup(filename);
 	return TRUE;
@@ -227,7 +230,7 @@ void load_metadata() {
 	for (int i = 0; i < NUM_SONGS; i++)
 		bgm_title[i] = (char *)bgm_orig_title[i];
 	metadata_changed = FALSE;
-	
+
 	// We want an absolute path here, so we don't get screwed by
 	// GetOpenFileName's current-directory shenanigans when we update.
 	char *lastpart;
@@ -235,10 +238,10 @@ void load_metadata() {
 	char *ext = strrchr(lastpart, '.');
 	if (!ext) ext = lastpart + strlen(lastpart);
 	strcpy(ext, ".ebmused");
-	
+
 	FILE *mf = fopen(md_filename, "r");
 	if (!mf) return;
-	
+
 	int c;
 	while ((c = fgetc(mf)) >= 0) {
 		char buf[MAX_PATH];
@@ -275,10 +278,10 @@ void save_metadata() {
 		MessageBox2(strerror(errno), md_filename, MB_ICONEXCLAMATION);
 		return;
 	}
-	
+
 	if (orig_rom_filename)
 		fprintf(mf, "O %s\n", orig_rom_filename);
-	
+
 	// SPC ranges containing at least one free area
 	for (int i = 0; i < area_count; i++) {
 		int start = areas[i].address;

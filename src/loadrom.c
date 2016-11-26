@@ -8,6 +8,7 @@
 
 FILE *rom;
 int rom_size;
+int rom_offset;
 char *rom_filename;
 
 unsigned char pack_used[NUM_SONGS][3];
@@ -62,7 +63,7 @@ BOOL close_rom() {
 			return FALSE;
 	}
 	save_metadata();
-	
+
 	fclose(rom);
 	rom = NULL;
 	free(rom_filename);
@@ -95,7 +96,8 @@ BOOL open_rom(char *filename, BOOL readonly) {
 		return FALSE;
 
 	rom_size = _filelength(_fileno(f));
-	if (rom_size < 0x300200) {
+	rom_offset = rom_size & 0x200;
+	if (rom_size < 0x300000) {
 		MessageBox2("An EarthBound ROM must be at least 3 MB", "Can't open file", MB_ICONEXCLAMATION);
 		fclose(f);
 		return FALSE;
@@ -105,7 +107,7 @@ BOOL open_rom(char *filename, BOOL readonly) {
 	enable_menu_items(rom_menu_cmds, MF_ENABLED);
 
 	init_areas();
-	change_range(0xC00000, 0xBFFE00 + rom_size, AREA_NOT_IN_FILE, AREA_NON_SPC);
+	change_range(0xBFFE00 + rom_offset, 0xBFFC00 + rom_offset + rom_size, AREA_NOT_IN_FILE, AREA_NON_SPC);
 
 	char *bfile = skip_dirname(filename);
 	char *title = malloc(sizeof("EarthBound Music Editor") + 3 + strlen(bfile));
@@ -113,7 +115,7 @@ BOOL open_rom(char *filename, BOOL readonly) {
 	SetWindowText(hwndMain, title);
 	free(title);
 
-	fseek(f, BGM_PACK_TABLE, SEEK_SET);
+	fseek(f, BGM_PACK_TABLE + rom_offset, SEEK_SET);
 	fread(pack_used, NUM_SONGS, 3, f);
 	// pack pointer table follows immediately after
 	for (int i = 0; i < NUM_PACKS; i++) {
@@ -122,7 +124,7 @@ BOOL open_rom(char *filename, BOOL readonly) {
 		rom_packs[i].start_address = addr;
 	}
 
-	fseek(f, SONG_POINTER_TABLE, SEEK_SET);
+	fseek(f, SONG_POINTER_TABLE + rom_offset, SEEK_SET);
 	fread(song_address, NUM_SONGS, 2, f);
 
 	init_crc();
@@ -132,13 +134,13 @@ BOOL open_rom(char *filename, BOOL readonly) {
 		struct block *blocks = NULL;
 		BOOL valid = TRUE;
 		struct pack *rp = &rom_packs[i];
-		
-		int offset = rp->start_address - 0xBFFE00;
-		if (offset < 0x200 || offset >= rom_size) {
+
+		int offset = rp->start_address - 0xC00000 + rom_offset;
+		if (offset < rom_offset || offset >= rom_size) {
 			valid = FALSE;
 			goto bad_pointer;
 		}
-		
+
 		fseek(f, offset, SEEK_SET);
 		DWORD crc = ~0;
 		while ((size = fgetw(f)) > 0) {
@@ -146,7 +148,7 @@ BOOL open_rom(char *filename, BOOL readonly) {
 			if (spc_addr + size > 0x10000) { valid = FALSE; break; }
 			offset += 4 + size;
 			if (offset > rom_size) { valid = FALSE; break; }
-			
+
 			count++;
 			blocks = realloc(blocks, sizeof(struct block) * count);
 			blocks[count-1].size = size;
@@ -166,7 +168,7 @@ BOOL open_rom(char *filename, BOOL readonly) {
 		}
 		crc = ~update_crc(crc, (BYTE *)&size, 2);
 bad_pointer:
-		change_range(rp->start_address, offset + 2 + 0xBFFE00, 
+		change_range(rp->start_address, offset + 2 + 0xC00000 - rom_offset,
 			AREA_NON_SPC, i);
 		rp->status = valid ? crc != pack_orig_crc[i] : 2;
 		rp->block_count = count;

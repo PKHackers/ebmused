@@ -70,7 +70,7 @@ static char *open_dialog(BOOL (WINAPI *func)(LPOPENFILENAME),
 
 BOOL get_original_rom() {
 	char *file = open_dialog(GetOpenFileName,
-		"SNES ROM files (*.smc)\0*.smc\0All Files\0*.*\0",
+		"SNES ROM files (*.smc, *.sfc)\0*.smc;*.sfc\0All Files\0*.*\0",
 		OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
 	BOOL ret = file && open_orig_rom(file);
 	metadata_changed |= ret;
@@ -105,7 +105,8 @@ static void import() {
 		return;
 	}
 
-	char *file = open_dialog(GetOpenFileName, NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
+	char *file = open_dialog(GetOpenFileName,
+		"EarthBound Music files (*.ebm)\0*.ebm\0All Files\0*.*\0", OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
 	if (!file) return;
 
 	FILE *f = fopen(file, "rb");
@@ -167,7 +168,7 @@ static void export() {
 		return;
 	}
 
-	char *file = open_dialog(GetSaveFileName, NULL, 0);
+	char *file = open_dialog(GetSaveFileName, "EarthBound Music files (*.ebm)\0*.ebm\0", 0);
 	if (!file) return;
 
 	FILE *f = fopen(file, "wb");
@@ -226,7 +227,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		switch (id) {
 		case ID_OPEN: {
 			char *file = open_dialog(GetOpenFileName,
-				"SNES ROM files (*.smc)\0*.smc\0All Files\0*.*\0", OFN_FILEMUSTEXIST);
+				"SNES ROM files (*.smc, *.sfc)\0*.smc;*.sfc\0All Files\0*.*\0", OFN_FILEMUSTEXIST);
 			if (file && open_rom(file, ofn.Flags & OFN_READONLY)) {
 				SendMessage(tab_hwnd[current_tab], WM_ROM_CLOSED, 0, 0);
 				SendMessage(tab_hwnd[current_tab], WM_ROM_OPENED, 0, 0);

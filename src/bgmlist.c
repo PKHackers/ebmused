@@ -108,7 +108,7 @@ void load_instruments() {
 		int p = packs_loaded[i];
 		if (p >= NUM_PACKS) continue;
 		int addr, size;
-		fseek(rom, rom_packs[p].start_address - 0xbffe00, 0);
+		fseek(rom, rom_packs[p].start_address - 0xC00000 + rom_offset, 0);
 		while ((size = fgetw(rom))) {
 			addr = fgetw(rom);
 			if (size + addr >= 0x10000) {
@@ -237,13 +237,13 @@ LRESULT CALLBACK BGMListWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			int new_spc_address = GetDlgItemHex(hWnd, IDC_BGM_SPCADDR);
 			if (new_spc_address < 0 || new_spc_address > 0xFFFF) break;
 
-			fseek(rom, BGM_PACK_TABLE + 3 * selected_bgm, SEEK_SET);
+			fseek(rom, BGM_PACK_TABLE + rom_offset + 3 * selected_bgm, SEEK_SET);
 			if (!fwrite(new_pack_used, 3, 1, rom)) {
 write_error:	MessageBox2(strerror(errno), "Save", MB_ICONERROR);
 				break;
 			}
 			memcpy(&pack_used[selected_bgm], new_pack_used, 3);
-			fseek(rom, SONG_POINTER_TABLE + 2 * selected_bgm, SEEK_SET);
+			fseek(rom, SONG_POINTER_TABLE + rom_offset + 2 * selected_bgm, SEEK_SET);
 			if (!fwrite(&new_spc_address, 2, 1, rom))
 				goto write_error;
 			song_address[selected_bgm] = new_spc_address;
