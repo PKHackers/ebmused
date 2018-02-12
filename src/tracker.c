@@ -94,13 +94,14 @@ static void scroll_to(int new_pos) {
 
 static COLORREF get_bkcolor(int sub_loops) {
 	if (sub_loops == 0)
-		return 0xFFFFFF;
-	int c = 0x808080;
-	if (sub_loops & 1) c += 0x550000;
-	if (sub_loops & 2) c += 0x005500;
-	if (sub_loops & 4) c += 0x000055;
+		return 0xFFFFFF; //this line controls what color normal notes will be
+	int c = 0x808080; //the following logic controls what color notes in subroutines will be
+	if (sub_loops & 1) c += 0x550000; //The format is 0x00BBGGRR, not the RGB format you'd expect
+	if (sub_loops & 2) c += 0x005500; //Due to the nature of these if statements, several of them can apply to the same note
+	if (sub_loops & 4) c += 0x000055; //You can calculate 0xRRGGBB values with this online tool: https://www.webpagefx.com/web-design/color-picker/
 	if (sub_loops & 8) c += 0x2A2A2A;
 	return c;
+	//else return 0x8C5A37; //comment out lines 98 to 103 and uncomment this if you want loops to have one uniform color
 }
 
 static void get_font_size(HWND hWnd) {
