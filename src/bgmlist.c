@@ -112,7 +112,7 @@ void load_instruments() {
 		while ((size = fgetw(rom))) {
 			addr = fgetw(rom);
 			if (size + addr >= 0x10000) {
-				MessageBox2("Invalid SPC block", "Error loading instruments", MB_ICONERROR);
+				MessageBox2("Invalid SPC block!", "Error loading instruments", MB_ICONERROR);
 				return;
 			}
 			fread(&spc[addr], size, 1, rom);
@@ -248,8 +248,7 @@ write_error:	MessageBox2(strerror(errno), "Save", MB_ICONERROR);
 				goto write_error;
 			song_address[selected_bgm] = new_spc_address;
 			fflush(rom);
-			sprintf(buf, "Info for BGM %02X saved", selected_bgm + 1);
-			MessageBox2(buf, "BGM info saved", MB_OK);
+			MessageBox2("Instrument/song pack/address info saved!\nBe sure to reload the ROM in your emulator before listening - it won't play correctly if you load a savestate from before these values were changed.", "BGM info saved", MB_OK);
 			break;
 		}
 		case IDC_CUR_IPACK_1:
