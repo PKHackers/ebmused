@@ -93,11 +93,11 @@ static void scroll_to(int new_pos) {
 }
 
 static COLORREF get_bkcolor(int sub_loops) {
-	if (sub_loops == 0)
-		return 0xFFFFFF;
-	int c = 0x808080;
-	if (sub_loops & 1) c += 0x550000;
-	if (sub_loops & 2) c += 0x005500;
+	if (sub_loops == 0) return 0xFFFFFF; //This value is what color normal notes will be
+	//else return 0x8C5A37 //comment out the following lines and uncomment this for loops to be drawn with one solid background color
+	int c = 0x808080; //The following logic determines what color notes in loops will be
+	if (sub_loops & 1) c += 0x550000; //the format in hex is 0xBBGGRR, not the 0xRRGGBB format you'd expect
+	if (sub_loops & 2) c += 0x005500; //due to the nature of these if statements' conditions, several of them can be applied to the same note
 	if (sub_loops & 4) c += 0x000055;
 	if (sub_loops & 8) c += 0x2A2A2A;
 	return c;
