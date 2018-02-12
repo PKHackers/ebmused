@@ -57,8 +57,8 @@ BOOL close_rom() {
 			unsaved_packs++;
 	if (unsaved_packs) {
 		char buf[70];
-		if (unsaved_packs > 1) sprintf(buf, "Multiple packs have been modified.\nDo you want to save them?");
-		else sprintf(buf, "The current pack has been modified.\nDo you want to save it?");
+		if (unsaved_packs == 1) sprintf(buf, "The current pack has been modified.\nDo you want to save it?");
+		else sprintf(buf, "Multiple packs have been modified.\nDo you want to save them?");
 		int action = MessageBox2(buf, "Close", MB_ICONEXCLAMATION | MB_YESNOCANCEL);
 		if (action == IDCANCEL || (action == IDYES && !save_all_packs()))
 			return FALSE;
