@@ -39,7 +39,7 @@ static char *const tab_name[NUM_TABS] = {
 	"BGM list",
 	"Instruments",
 	"Edit song",
-	"SPC packs"
+	"Pack data"
 };
 LRESULT CALLBACK BGMListWndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK InstrumentsWndProc(HWND, UINT, WPARAM, LPARAM);
@@ -101,7 +101,7 @@ static void tab_selected(int new) {
 
 static void import() {
 	if (packs_loaded[2] >= NUM_PACKS) {
-		MessageBox2("No song pack selected", "Import", MB_ICONEXCLAMATION);
+		MessageBox2("No song pack selected!", "Import", MB_ICONEXCLAMATION);
 		return;
 	}
 
@@ -117,7 +117,7 @@ static void import() {
 
 	struct block b;
 	if (!fread(&b, 4, 1, f) || b.spc_address + b.size > 0x10000 || _filelength(_fileno(f)) != 4 + b.size) {
-		MessageBox2("File is not an EBmused export", "Import", MB_ICONEXCLAMATION);
+		MessageBox2("This file doesn't appear to be an EBMusEd export.", "Import", MB_ICONEXCLAMATION);
 		goto err1;
 	}
 	b.data = malloc(b.size);
@@ -164,7 +164,7 @@ err1:
 static void export() {
 	struct block *b = save_cur_song_to_pack();
 	if (!b) {
-		MessageBox2("No song loaded", "Export", MB_ICONEXCLAMATION);
+		MessageBox2("No song loaded!", "Export", MB_ICONEXCLAMATION);
 		return;
 	}
 
@@ -195,7 +195,8 @@ BOOL save_all_packs() {
 	}
 	if (packs) {
 		SendMessage(tab_hwnd[current_tab], WM_PACKS_SAVED, 0, 0);
-		sprintf(buf, "%d pack(s) saved", packs);
+		if (packs == 1) sprintf(buf, "The current pack has been saved.");
+		else sprintf(buf, "All edited packs have been saved.");
 		MessageBox2(buf, "Save", MB_OK);
 	}
 	save_metadata();
@@ -259,9 +260,9 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			break;
 		case ID_PLAY:
 			if (cur_song.order_length == 0)
-				MessageBox2("No song loaded", "Play", MB_ICONEXCLAMATION);
+				MessageBox2("No song loaded!", "Play", MB_ICONEXCLAMATION);
 			else if (samp[0].data == NULL)
-				MessageBox2("No instruments loaded", "Play", MB_ICONEXCLAMATION);
+				MessageBox2("No instruments loaded!", "Play", MB_ICONEXCLAMATION);
 			else {
 				if (sound_init()) song_playing = TRUE;
 			}
