@@ -43,9 +43,9 @@ struct track *pattern_insert(int pat) {
 void pattern_delete(int pat) {
 	for (int i = 0; i < 8; i++)
 		free(cur_song.pattern[pat][i].track);
-	memmove(&cur_song.pattern[pat], &cur_song.pattern[pat+1], (--cur_song.patterns - pat) * sizeof(struct track) * 8);
+	memmove(&cur_song.pattern[pat], &cur_song.pattern[pat + 1], (--cur_song.patterns - pat) * sizeof(struct track) * 8);
 
-	for (int i = 0; i < cur_song.order_length; ) {
+	for (int i = 0; i < cur_song.order_length;) {
 		if (cur_song.order[i] == pat) {
 			order_delete(i);
 			continue;
@@ -67,12 +67,12 @@ BOOL split_pattern(int pos) {
 	for (ch = 0; ch < 8; ch++) {
 		struct channel_state *c = &split_state.chan[ch];
 		if (c->sub_count && *c->ptr != '\0') {
-			sprintf(buf, "Track %d is inside a subroutine", ch);
+			sprintf(buf, "Track %d is inside a subroutine.", ch);
 			MessageBox2(buf, "Cannot split", 48/*MB_ICONEXCLAMATION*/);
 			return FALSE;
 		}
 		if (c->next != 0) {
-			sprintf(buf, "Track %d is inside a note", ch);
+			sprintf(buf, "Track %d is inside a note.", ch);
 			MessageBox2(buf, "Cannot split", 48/*MB_ICONEXCLAMATION*/);
 			return FALSE;
 		}
@@ -120,7 +120,7 @@ BOOL join_patterns() {
 	int next_pat = cur_song.order[state.ordnum+1];
 	int i;
 	if (this_pat == next_pat) {
-		MessageBox2("Next pattern is same as current",
+		MessageBox2("The next pattern is the same as the current one.",
 			"Cannot join", 48/*MB_ICONEXCLAMATION*/);
 		return FALSE;
 	}
@@ -132,7 +132,7 @@ BOOL join_patterns() {
 			 || cur_song.order[i] != next_pat) goto nonconsec;
 		} else if (cur_song.order[i] == next_pat) {
 nonconsec:
-			sprintf(buf, "Patterns %d and %d are not always consecutive",
+			sprintf(buf, "Patterns %d and %d are not always consecutive.",
 				this_pat, next_pat);
 error:
 			MessageBox2(buf, "Cannot join", 48/*MB_ICONEXCLAMATION*/);
@@ -143,11 +143,11 @@ error:
 	struct track *np = cur_song.pattern[next_pat];
 	for (i = 0; i < 8; i++) {
 		if (tp[i].track == NULL && np[i].track != NULL) {
-			sprintf(buf, "Track %d active in pattern %d but not in %d",
+			sprintf(buf, "Track %d is active in Pattern %d, but not in Pattern %d.",
 				i, next_pat, this_pat);
 			goto error;
 		} else if (tp[i].track != NULL && np[i].track == NULL) {
-			sprintf(buf, "Track %d active in pattern %d but not in %d",
+			sprintf(buf, "Track %d is active in Pattern %d, but not in Pattern %d.",
 				i, this_pat, next_pat);
 			goto error;
 		}
