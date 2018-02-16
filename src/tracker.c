@@ -141,7 +141,7 @@ static void show_track_text() {
 }
 
 static void cursor_moved(BOOL select) {
-	char caption[20];
+	char caption[30]; //This was originally 20 chars long. An exception was being thrown here because "Track X (not present)" is longer than that.
 	struct track *t;
 
 	if (!cur_song.order_length) return;
