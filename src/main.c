@@ -39,7 +39,7 @@ static char *const tab_name[NUM_TABS] = {
 	"BGM list",
 	"Instruments",
 	"Edit song",
-	"Pack data"
+	"SPC Packs"
 };
 LRESULT CALLBACK BGMListWndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK InstrumentsWndProc(HWND, UINT, WPARAM, LPARAM);
