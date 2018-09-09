@@ -141,7 +141,7 @@ static void show_track_text() {
 }
 
 static void cursor_moved(BOOL select) {
-	char caption[20];
+	char caption[23];
 	struct track *t;
 
 	if (!cur_song.order_length) return;
