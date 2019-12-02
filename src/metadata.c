@@ -65,7 +65,7 @@ const char *const bgm_orig_title[NUM_SONGS] = {
 	"Moonside",
 	"Dusty Dunes Desert",
 	"Peaceful Rest Valley",
-	"Happy Happy Village", // was "Zombie Threed"
+	"Happy Happy Village",
 	"Winters",
 	"Cave Near a Boss",
 	"Summers",
