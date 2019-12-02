@@ -1,5 +1,9 @@
-# EarthBound Music Editor
+## EarthBound Music Editor
+EBMusEd is a ROM hacking tool for editing and playing back EarthBound's N-SPC sequence data.
 
-Originally written by Goplat with the source code made publicly available on the PKHack forums of Starmen.net.
+For a tutorial on how to use it, check out the collection of EarthBound hacking-related tutorials on the [CoilSnake Wiki](https://github.com/pk-hack/CoilSnake/wiki/EBMusEd), as well as the `Code list` reference in the Help menu.
 
-Goplat has stated that he doesn't have interest in further developing the program so this repository is provided for the community to continue working on it together.
+## Background
+EBMusEd was originally written by Goplat, who publicly posted the source code on [starmen.net](https://forum.starmen.net/forum)'s PK Hack subforum.
+
+Goplat has since stated that he isn't interested in developing this project any further, so this repository is provided for the community to continue working on it together.
