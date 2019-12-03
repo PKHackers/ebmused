@@ -176,7 +176,7 @@ BOOL save_pack(int pack) {
 		return FALSE;
 
 	if (!orig_rom) {
-		MessageBox2("Before saving a pack, the original rom file needs to be specified so that it can be used to ensure that no unused remnants of previous versions of the pack are left in the file in such a way that they would increase the patch size.", "Save", 48);
+		MessageBox2("Before saving a pack, the original ROM file needs to be specified so that it can be used to ensure that no unused remnants of previous versions of the pack are left in the file in such a way that they would increase the patch size.", "Save", 48);
 		return FALSE;
 	}
 	int size = calc_pack_size(p);
