@@ -332,7 +332,12 @@ LRESULT CALLBACK EditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		ID_SPLIT_PATTERN, ID_JOIN_PATTERNS,
 		ID_MAKE_SUBROUTINE, ID_UNMAKE_SUBROUTINE, ID_TRANSPOSE,
 		ID_CLEAR_SONG,
-		ID_ZOOM_IN, ID_ZOOM_OUT, 0
+		ID_ZOOM_IN, ID_ZOOM_OUT,
+		ID_INCREMENT_DURATION, ID_DECREMENT_DURATION,
+		ID_SET_DURATION_1, ID_SET_DURATION_2,
+		ID_SET_DURATION_3, ID_SET_DURATION_4,
+		ID_SET_DURATION_5, ID_SET_DURATION_6,
+		0
 	};
 	switch (uMsg) {
 	case WM_CREATE:
@@ -719,6 +724,9 @@ static BOOL cursor_home(BOOL select) {
 	return TRUE;
 }
 
+/// \brief Attempts to move the cursor back by one control code.
+/// \return Returns false if the cursor cannot be moved backwards due
+/// to already being at the top of the track, otherwise returns true.
 static BOOL cursor_back(BOOL select) {
 	int prev_pos;
 	struct parser prev;
@@ -940,6 +948,102 @@ static void delete_sel(BOOL cut) {
 	restore_cursor(t, start - t->track);
 }
 
+static void updateOrInsertDuration(BYTE(*callback)(BYTE, int), int durationOrOffset)
+{
+	// We cannot insert a duration code before an 0x00 code,
+	// so ensure that's not the case before proceeding.
+	if (cursor_track->track != NULL
+		&& *cursor.ptr != 0)
+	{
+		BYTE* original_pos = cursor.ptr;
+		struct track* t = cursor_track;
+		int off = cursor.ptr - t->track;
+		if (*cursor.ptr >= 0x01 && *cursor.ptr <= 0x7F)
+		{
+			BYTE duration = callback(*cursor.ptr, durationOrOffset);
+			if (duration != 0)
+			{
+				*cursor.ptr = duration;
+				cur_song.changed = TRUE;
+				InvalidateRect(hwndTracker, NULL, FALSE);
+			}
+		}
+		else
+		{
+			// A duration code isn't selected so
+			// find the last duration and last note, if any.
+			BYTE* last_duration_pos = NULL;
+			BYTE* last_note_pos = NULL;
+			cursor_home(FALSE);
+			while (cursor.ptr != original_pos)
+			{
+				if (*cursor.ptr >= 0x01 && *cursor.ptr <= 0x7F)
+					last_duration_pos = cursor.ptr;
+				else if (*cursor.ptr >= 0x80 && *cursor.ptr <= 0xDF)
+					last_note_pos = cursor.ptr;
+
+				// Advance the cursor if possible and continue, otherwise break.
+				if (!cursor_fwd(FALSE))
+					break;
+			}
+
+			// If we found a duration and a note doesn't follow it (meaning
+			// the selected note follows the duration code), set the duration.
+			if (last_duration_pos != NULL
+				&& last_duration_pos > last_note_pos)
+			{
+				BYTE duration = callback(*last_duration_pos, durationOrOffset);
+				if (duration != 0)
+				{
+					*last_duration_pos = duration;
+
+					// restore the cursor position.
+					//cursor.ptr = original_pos;
+					pattern_changed();
+					restore_cursor(t, off);
+				}
+			}
+			else if (last_note_pos != NULL)
+			{
+				// Else if we found a note position and it comes after the last
+				// duration code (or there is none), insert a duration.
+				BYTE duration = callback(last_duration_pos == NULL ? state.chan[cursor_chan].note_len : *last_duration_pos, durationOrOffset);
+				if (duration != 0)
+				{
+					track_insert(1, (BYTE *)&duration);
+					cursor_fwd(FALSE);
+				}
+			}
+		}
+	}
+}
+
+static BYTE setDurationOffsetCallback(BYTE originalDuration, int offset)
+{
+	BYTE newDuration = min(max(0x00, originalDuration + offset), 0xFF);
+	return (newDuration >= 0x01 && newDuration <= 0x7F) ? newDuration : 0;
+}
+
+static BYTE setDurationCallback(BYTE originalDuration, int duration)
+{
+	return (duration >= 0x01 && duration <= 0x7F) ? duration : 0;
+}
+
+static void incrementDuration()
+{
+	updateOrInsertDuration(setDurationOffsetCallback, 1);
+}
+
+static void decrementDuration()
+{
+	updateOrInsertDuration(setDurationOffsetCallback, -1);
+}
+
+static void setDuration(BYTE duration)
+{
+	updateOrInsertDuration(setDurationCallback, duration);
+}
+
 void editor_command(int id) {
 	switch (id) {
 	case ID_CUT: delete_sel(TRUE); break;
@@ -1061,6 +1165,30 @@ void editor_command(int id) {
 		zoom = zoom_levels[++zoom_idx];
 		InvalidateRect(hwndTracker, NULL, FALSE);
 		break;
+	case ID_INCREMENT_DURATION:
+		incrementDuration();
+		break;
+	case ID_DECREMENT_DURATION:
+		decrementDuration();
+		break;
+	case ID_SET_DURATION_1:
+		setDuration(0x60);
+		break;
+	case ID_SET_DURATION_2:
+		setDuration(0x30);
+		break;
+	case ID_SET_DURATION_3:
+		setDuration(0x18);
+		break;
+	case ID_SET_DURATION_4:
+		setDuration(0x0C);
+		break;
+	case ID_SET_DURATION_5:
+		setDuration(0x06);
+		break;
+	case ID_SET_DURATION_6:
+		setDuration(0x03);
+		break;
 	}
 }
 
@@ -1132,16 +1260,49 @@ static void tracker_keydown(WPARAM wParam) {
 	case VK_DELETE:
 		delete_sel(shift);
 		break;
+	case VK_ADD:
+		incrementDuration();
+		break;
+	case VK_SUBTRACT:
+		decrementDuration();
+		break;
+	case VK_NUMPAD1:
+		setDuration(0x60);
+		break;
+	case VK_NUMPAD2:
+		setDuration(0x30);
+		break;
+	case VK_NUMPAD3:
+		setDuration(0x18);
+		break;
+	case VK_NUMPAD4:
+		setDuration(0x0C);
+		break;
+	case VK_NUMPAD5:
+		setDuration(0x06);
+		break;
+	case VK_NUMPAD6:
+		setDuration(0x03);
+		break;
 	default:
 		if (control) {
 			if (wParam == 'C') copy_sel();
 			else if (wParam == 'V') paste_sel();
 			else if (wParam == 'X') delete_sel(TRUE);
-			break;
+			else if (wParam == VK_OEM_COMMA) decrementDuration();
+			else if (wParam == VK_OEM_PERIOD) incrementDuration();
+			else if (wParam == '1') setDuration(0x60);
+			else if (wParam == '2') setDuration(0x30);
+			else if (wParam == '3') setDuration(0x18);
+			else if (wParam == '4') setDuration(0x0C);
+			else if (wParam == '5') setDuration(0x06);
+			else if (wParam == '6') setDuration(0x03);
 		}
-
-		int note = note_from_key(wParam, shift);
-		addOrInsertNote(note);
+		else
+		{
+			int note = note_from_key(wParam, shift);
+			addOrInsertNote(note);
+		}
 		break;
 	}
 }

@@ -251,10 +251,26 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			DialogBox(hinstance, MAKEINTRESOURCE(IDD_OPTIONS), hWnd, OptionsDlgProc);
 			break;
 		}
-		case ID_CUT: case ID_COPY: case ID_PASTE: case ID_DELETE:
-		case ID_SPLIT_PATTERN: case ID_JOIN_PATTERNS:
-		case ID_MAKE_SUBROUTINE: case ID_UNMAKE_SUBROUTINE: case ID_TRANSPOSE:
-		case ID_CLEAR_SONG: case ID_ZOOM_OUT: case ID_ZOOM_IN:
+		case ID_CUT:
+		case ID_COPY:
+		case ID_PASTE:
+		case ID_DELETE:
+		case ID_SPLIT_PATTERN:
+		case ID_JOIN_PATTERNS:
+		case ID_MAKE_SUBROUTINE:
+		case ID_UNMAKE_SUBROUTINE:
+		case ID_TRANSPOSE:
+		case ID_CLEAR_SONG:
+		case ID_ZOOM_OUT:
+		case ID_ZOOM_IN:
+		case ID_INCREMENT_DURATION:
+		case ID_DECREMENT_DURATION:
+		case ID_SET_DURATION_1:
+		case ID_SET_DURATION_2:
+		case ID_SET_DURATION_3:
+		case ID_SET_DURATION_4:
+		case ID_SET_DURATION_5:
+		case ID_SET_DURATION_6:
 			editor_command(id);
 			break;
 		case ID_PLAY:
