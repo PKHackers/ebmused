@@ -38,7 +38,7 @@ static char *internal_validate_track(BYTE *data, int size, BOOL is_sub) {
 				if (data[pos+3] == 0) return "Subroutine loop count can not be 0";
 			}
 		}
-		
+
 		pos = next;
 	}
 	return NULL;
@@ -55,7 +55,7 @@ BOOL validate_track(BYTE *data, int size, BOOL is_sub) {
 
 int compile_song(struct song *s) {
 	int i;
-	
+
 	// Put order
 	WORD *wout = (WORD *)&spc[s->address];
 	int first_pat = s->address + s->order_length*2 + (s->repeat ? 6 : 2);
@@ -89,7 +89,7 @@ int compile_song(struct song *s) {
 	// There's another 0 before subs start
 	*tout++ = 0;
 	BYTE *tracks_end = tout;
-	
+
 	// Convert subroutine numbers into addresses, and append the subs as
 	// they are used. This is consistent with the way the original songs are:
 	// subs are always in order of first use, and there are no unused subs.
@@ -98,7 +98,7 @@ int compile_song(struct song *s) {
 		if (*pos == 0xEF) {
 			int sub = *(WORD *)(pos + 1);
 			if (sub >= s->subs) abort(); // can't happen
-			
+
 			if (sub_table[sub] == 0) {
 				struct track *t = &s->sub[sub];
 				sub_table[sub] = tout - spc;
@@ -117,7 +117,7 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 	char *error = errbuf;
 	s->address = start_addr;
 	s->changed = FALSE;
-	
+
 	// Get order length and repeat info (at this point, we don't know how
 	// many patterns there are, so the pattern pointers aren't validated yet)
 	WORD *wp = (WORD *)&spc[start_addr];
@@ -154,13 +154,13 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 	} else {
 		tracks_start = *wp;
 	}
-	
+
 	int pat_bytes = tracks_start - first_pattern;
 	if (pat_bytes <= 0 || pat_bytes & 15) {
 		sprintf(errbuf, "Bad first track pointer: %x", tracks_start);
 		goto error1;
 	}
-	
+
 	int tracks_end;
 	if (((BYTE *)wp)+1 >= &spc[end_addr]) {
 		// no tracks in the song
@@ -175,7 +175,7 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 			goto error1;
 		}
 
-		
+
 		// is the last track the first one in its pattern?
 		BOOL first = TRUE;
 		int chan = (tpp - first_pattern) >> 1 & 7;
@@ -187,12 +187,12 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 		end += first;
 		tracks_end = end - spc;
 	}
-	
+
 	if (spc[tracks_end] != 0) {
 		sprintf(errbuf, "No ending 0 byte after tracks (%02X)", spc[tracks_end]);
 		goto error1;
 	}
-	
+
 	// Now the number of patterns is known, so go back and get the order
 	s->order = malloc(sizeof(int) * s->order_length);
 	wp = (WORD *)&spc[start_addr];
@@ -211,7 +211,7 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 	s->pattern = calloc(sizeof(*s->pattern), s->patterns);
 	s->subs = 0;
 	s->sub = NULL;
-	
+
 	wp = (WORD *)&spc[first_pattern];
 	BOOL first;
 	for (int trk = 0; trk < s->patterns * 8; trk++) {
@@ -223,7 +223,7 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 			sprintf(errbuf, "Bad track pointer: %x", start);
 			goto error3;
 		}
-	
+
 		int next = 0;
 		WORD *nextp = wp;
 		while (nextp < (WORD *)&spc[tracks_start] && (next = *nextp) == 0)
@@ -234,7 +234,7 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 			sprintf(errbuf, "Tracks out of order (%04X, %04X)", start, next);
 			goto error3;
 		}
-		
+
 		if (first && spc[--next] != 0) {
 			sprintf(errbuf, "Track %d.%d not zero terminated", trk >> 3, trk & 7);
 			goto error3;
@@ -243,20 +243,20 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 		t->size = next - start;
 		t->track = memcpy(malloc(t->size + 1), &spc[start], t->size);
 		t->track[t->size] = 0;
-		
+
 		for (BYTE *p = t->track; p < t->track + t->size; p = next_code(p)) {
 			if (*p != 0xEF) continue;
 			int sub_ptr = *(WORD *)(p + 1);
 			int i;
 			if (sub_ptr == next_sub) {
 				i = s->subs++;
-				
+
 				sub_table = realloc(sub_table, sizeof(WORD) * s->subs);
 				sub_table[i] = sub_ptr;
-				
+
 				s->sub = realloc(s->sub, sizeof(struct track) * s->subs);
 				struct track *st = &s->sub[i];
-				
+
 				BYTE *substart = &spc[sub_ptr];
 				BYTE *subend = substart;
 				while (*subend != 0) subend = next_code(subend);
@@ -267,7 +267,7 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 					error = e;
 					goto error3;
 				}
-				
+
 				next_sub = (subend + 1) - spc;
 			} else {
 				for (i = 0; i < s->subs && sub_table[i] != sub_ptr; i++);
@@ -283,11 +283,11 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 			error = e;
 			goto error3;
 		}
-		
+
 		first = FALSE;
 	}
 	free(sub_table);
-	
+
 	return next_sub;
 
 error3:
@@ -312,7 +312,7 @@ void free_song(struct song *s) {
 	if (!s->order_length) return;
 	s->changed = FALSE;
 	free(s->order);
-	for (pat = 0; pat < s->patterns; pat++) 
+	for (pat = 0; pat < s->patterns; pat++)
 		for (ch = 0; ch < 8; ch++)
 			free(s->pattern[pat][ch].track);
 	free(s->pattern);

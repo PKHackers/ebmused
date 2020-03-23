@@ -49,13 +49,13 @@ static const struct control_desc pack_list_controls[] = {
 // Lower
 	{ "Static",   10, 10,200, 18, "Unsaved packs:", IDC_MLIST_CAPTION, 0 },
 	{ WC_LISTVIEW,10, 30,-20,-90, NULL, IDC_INMEM_LIST, WS_BORDER | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS },
-	
+
 	{ "Static",   10,-55, 50, 20, "Pack:", IDC_PACK_OPTS_HDR, WS_DISABLED },
 	{ "Button",   60,-55, 80, 20, "Save", IDC_PACK_SAVE, WS_DISABLED },
 	{ "Edit",    160,-55, 60, 20, NULL, IDC_PACK_ADDRESS, WS_BORDER | WS_DISABLED },
 	{ "Button",  225,-55, 40, 20, "Move", IDC_PACK_MOVE, WS_DISABLED },
 	{ "Button",  340,-55, 40, 20, "Reset", IDC_PACK_RESET, WS_DISABLED },
-	
+
 	{ "Static",   10,-30, 50, 20, "Song:", IDC_SONG_OPTS_HDR, WS_DISABLED },
 	{ "Edit",     60,-30, 40, 20, NULL, IDC_SONG_ADDRESS, WS_BORDER | WS_DISABLED },
 	{ "Button",  105,-30, 40, 20, "New", IDC_SONG_NEW, WS_DISABLED },
@@ -216,7 +216,7 @@ static void show_free_ranges() {
 
 static void show_rom_packs() {
 	HWND packlist = rom_list;
-	
+
 	LVITEM lvi;
 	lvi.iItem = 0;
 	char buf[14];
@@ -237,11 +237,11 @@ static void show_rom_packs() {
 		sprintf(buf, "%06X-%06X",
 			pack->start_address, pack->start_address + size - 1);
 		(void)ListView_SetItem(packlist, &lvi);
-		
+
 		lvi.iSubItem = 2;
 		sprintf(buf, "%d", size);
 		(void)ListView_SetItem(packlist, &lvi);
-		
+
 		lvi.iSubItem = 3;
 		static char *const status_text[] = {
 			"Original", "Modified", "Invalid", "Saved"
@@ -259,13 +259,13 @@ static void show_rom_packs() {
 
 	SendMessage(packlist, WM_SETREDRAW, TRUE, 0);
 	center_on_item(packlist, packs_loaded[2] << 16 | (1 + current_block));
-	
+
 }
 
 static void show_inmem_packs() {
 	HWND packlist = inmem_list;
 	LVITEM lvi;
-	
+
 	lvi.iItem = 0;
 	SendMessage(packlist, WM_SETREDRAW, FALSE, 0);
 	for (int i = 0; i < NUM_PACKS; i++) {
@@ -285,11 +285,11 @@ static void show_inmem_packs() {
 		lvi.iSubItem = 1;
 		sprintf(buf, "%06X-%06X", pack->start_address, pack->start_address + size - 1);
 		(void)ListView_SetItem(packlist, &lvi);
-		
+
 		lvi.iSubItem = 2;
 		sprintf(buf, "%d", size);
 		(void)ListView_SetItem(packlist, &lvi);
-		
+
 		lvi.iSubItem = 3;
 		int conflict = check_range(pack->start_address, pack->start_address + size, i);
 		switch (conflict) {
@@ -299,7 +299,7 @@ static void show_inmem_packs() {
 		default: sprintf(buf, "Overlap with %02X", conflict); break;
 		}
 		(void)ListView_SetItem(packlist, &lvi);
-		
+
 		lvi.iItem++;
 		if (i == packs_loaded[2])
 			show_blocks(packlist, pack, &lvi);

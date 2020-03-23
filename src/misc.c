@@ -44,7 +44,7 @@ int GetDlgItemHex(HWND hwndDlg, int idControl) {
 	if (GetDlgItemText(hwndDlg, idControl, buf, 9)) {
 		char *endp;
 		n = strtol(buf, &endp, 16);
-		if (*endp != '\0') n = -1; 
+		if (*endp != '\0') n = -1;
 	}
 	return n;
 }

@@ -20,7 +20,7 @@ void create_controls(HWND hWnd, struct window_template *t, LPARAM cs) {
 		if (y < 0) y += height;
 		if (xsize <= 0) xsize += width;
 		if (ysize <= 0) ysize += height;
-		HWND w = CreateWindow(c->class, c->title, 
+		HWND w = CreateWindow(c->class, c->title,
 			WS_CHILD | WS_VISIBLE | c->style,
 			x, top + y, xsize, ysize,
 			hWnd, (HMENU)c->id, hinstance, NULL);

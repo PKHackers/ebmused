@@ -13,8 +13,8 @@ void decode_samples(WORD *ptrtable) {
 		sa->data = NULL;
 		if (start == 0 || start == 0xffff)
 			continue;
-		
-		int end = start;	
+
+		int end = start;
 		int b;
 		do {
 			b = spc[end];
@@ -36,7 +36,7 @@ void decode_samples(WORD *ptrtable) {
 		sa->data = p;
 		for (int pos = start; pos < end; pos += 9) {
 			int range = spc[pos] >> 4;
-			int filter = (spc[pos] >> 2) & 3; 
+			int filter = (spc[pos] >> 2) & 3;
 			for (int i = 2; i < 18; i++) {
 				int s = spc[pos + (i >> 1)];
 				if (i & 1)
@@ -45,7 +45,7 @@ void decode_samples(WORD *ptrtable) {
 					s >>= 4;
 
 				if (s >= 8) s -= 16;
-				
+
 				s <<= range;
 				if (filter) {
 					switch (filter) {

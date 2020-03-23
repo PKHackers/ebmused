@@ -121,7 +121,7 @@ LRESULT CALLBACK CodeListWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		case WM_CTLCOLORSTATIC:
 			return (LRESULT)GetSysColorBrush(COLOR_WINDOW);
 		case WM_CREATE: {
-			HWND ed = CreateWindow("Edit", help_text, 
+			HWND ed = CreateWindow("Edit", help_text,
 				WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_READONLY,
 				0, 0, 0, 0,
 				hWnd, (HMENU)IDC_HELPTEXT, hinstance, NULL);

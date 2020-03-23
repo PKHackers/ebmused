@@ -20,7 +20,7 @@ static void calc_total_vol(struct song_state *st, struct channel_state *c,
 {
 	BYTE v = (trem_phase << 1 ^ trem_phase >> 7) & 0xFF;
 	v = ~(v * c->tremolo_range >> 8) & 0xFF;
-	
+
 	v = v * (st->volume.cur >> 8) >> 8;
 	v = v * volume_table[c->note_style & 15] >> 8;
 	v = v * (c->volume.cur >> 8) >> 8;
@@ -93,23 +93,23 @@ void calc_freq(struct channel_state *c, int note16) {
 		0x085F, 0x08DF, 0x0965, 0x09F4, 0x0A8C, 0x0B2C, 0x0BD6, 0x0C8B,
 		0x0D4A, 0x0E14, 0x0EEA, 0x0FCD, 0x10BE
 	};
-	
+
 	// What is this for???
 	if (note16 >= 0x3400)     note16 += (note16 >> 8) - 0x34;
 	else if (note16 < 0x1300) note16 += ((note16 >> 8) - 0x13) << 1;
-	
+
 	if ((WORD)note16 >= 0x5400) {
 		c->note_freq = 0;
 		return;
 	}
-	
+
 	int octave = (note16 >> 8) / 12;
 	int tone = (note16 >> 8) % 12;
 	int freq = note_freq_table[tone];
 	freq += (note_freq_table[tone+1] - freq) * (note16 & 0xFF) >> 8;
 	freq <<= 1;
 	freq >>= 6 - octave;
-	
+
 	BYTE *inst_freq = &spc[inst_base + 6*c->inst + 4];
 	freq *= (inst_freq[0] << 8 | inst_freq[1]);
 	freq >>= 8;
@@ -231,22 +231,22 @@ static void do_note(struct song_state *st, struct channel_state *c, int note) {
 		set_inst(st, c, note);
 		note = 0xA4;
 	}
-	
+
 	if (note < 0xC8) {
 		c->vibrato_phase = c->vibrato_fadein & 1 ? 0x80 : 0;
 		c->vibrato_start_ctr = 0;
 		c->vibrato_fadein_ctr = 0;
 		c->tremolo_phase = 0;
 		c->tremolo_start_ctr = 0;
-		
+
 		c->samp_pos = 0;
 		c->samp = &samp[spc[inst_base + 6*c->inst]];
 		c->env_height = 1;
-		
+
 		note &= 0x7F;
 		note += st->transpose + c->transpose;
 		c->note.cur = note << 8 | c->finetune;
-		
+
 		c->note.cycles = c->port_length;
 		if (c->note.cycles) {
 			int target = note;
@@ -262,8 +262,8 @@ static void do_note(struct song_state *st, struct channel_state *c, int note) {
 	}
 
 	// Search forward for the next note (to see if it's C8). This is annoying
-	// but necessary; C8 doesn't have to be the next byte after the note
-	// it's continuing. It can even continue the last note of a subroutine.
+	// but necessary - C8 can continue the last note of a subroutine as well
+	// as a normal note.
 	int next_note;
 	{	struct parser p;
 		parser_init(&p, c);
@@ -273,7 +273,7 @@ static void do_note(struct song_state *st, struct channel_state *c, int note) {
 		} while (parser_advance(&p));
 		next_note = *p.ptr;
 	}
-	
+
 	int rel;
 	if (next_note == 0xC8) {
 		// if the note will be continued, don't release yet
@@ -301,7 +301,7 @@ void load_pattern() {
 		}
 		state.ordnum = cur_song.repeat_pos;
 	}
-		
+
 	int pat = cur_song.order[state.ordnum];
 	printf("Order %d: pattern %d\n", state.ordnum, pat);
 
@@ -321,7 +321,7 @@ void load_pattern() {
 static void CF7(struct channel_state *c) {
 	if (c->note_release)
 		c->note_release--;
-	
+
 	// 0D60
 	if (c->note.cycles) {
 		if (c->cur_port_start_ctr == 0) {
@@ -361,7 +361,7 @@ static BOOL do_cycle(struct song_state *st) {
 	for (ch = 0; ch < 8; ch++) {
 		c = &st->chan[ch];
 		if (c->ptr == NULL) continue; //8F0
-		
+
 		if (--c->next >= 0) {
 			CF7(c);
 		} else while (1) {
@@ -395,15 +395,15 @@ static BOOL do_cycle(struct song_state *st) {
 		if (c->note.cycles == 0 && *c->ptr == 0xF9)
 			do_command(st, c);
 	}
-	
+
 	st->patpos++;
-	
+
 	slide(&st->tempo);
 	slide(&st->volume);
-	
+
 	for (c = &st->chan[0]; c != &st->chan[8]; c++) {
 		if (c->ptr == NULL) continue;
-		
+
 		// @ 0C40
 		slide(&c->volume);
 
@@ -414,14 +414,14 @@ static BOOL do_cycle(struct song_state *st) {
 				if (c->tremolo_phase >= 0x80 && c->tremolo_range == 0xFF)
 					c->tremolo_phase = 0x80;
 				else
-					c->tremolo_phase += c->tremolo_speed; 
+					c->tremolo_phase += c->tremolo_speed;
 				tphase = c->tremolo_phase;
 			} else {
 				c->tremolo_start_ctr++;
 			}
 		}
 		calc_total_vol(st, c, tphase);
-		
+
 		// 0C79
 		slide(&c->panning);
 
@@ -454,7 +454,7 @@ static void do_sub_cycle(struct song_state *st) {
 	for (c = &st->chan[0]; c != &st->chan[8]; c++) {
 		if (c->ptr == NULL) continue;
 		// $0DD0
-		
+
 		BOOL changed = FALSE;
 		if (c->tremolo_range && c->tremolo_start_ctr == c->tremolo_start) {
 			int p = c->tremolo_phase + sub_cycle_calc(st, c->tremolo_speed);
@@ -467,7 +467,7 @@ static void do_sub_cycle(struct song_state *st) {
 			changed = TRUE;
 		}
 		if (changed) calc_vol_2(c, pan);
-		
+
 		changed = FALSE;
 		int note = c->note.cur; // $0BBC
 		if (c->note.cycles && c->cur_port_start_ctr == 0) {
@@ -509,7 +509,7 @@ void initialize_state() {
 	state.volume.cur = 0xC000;
 	state.tempo.cur = 0x2000;
 	state.cycle_timer = 255;
-	
+
 	state.ordnum = -1;
 	if (cur_song.order_length) {
 		load_pattern();

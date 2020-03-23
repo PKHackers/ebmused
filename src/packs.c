@@ -190,7 +190,7 @@ BOOL save_pack(int pack) {
 			strcpy(p, "The ROM address is not in a range designated for SPC data");
 		else
 			sprintf(p, "Would overlap with pack %02X", conflict);
-		MessageBox2(error, "Save", 48/*MB_ICONEXCLAMATION*/);
+		MessageBox2(error, "Save", 48);
 		return FALSE;
 	}
 
@@ -201,7 +201,7 @@ BOOL save_pack(int pack) {
 	fseek(orig_rom, old_start - 0xC00000 + orig_rom_offset, SEEK_SET);
 	if (!fread(filler, old_size, 1, orig_rom)) {
 error:
-		MessageBox2(strerror(errno), "Save", 16/*MB_ICONERROR*/);
+		MessageBox2(strerror(errno), "Save", 16);
 		return FALSE;
 	}
 	fseek(rom, old_start - 0xC00000 + rom_offset, SEEK_SET);
