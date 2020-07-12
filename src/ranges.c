@@ -22,15 +22,15 @@ static void split_area(int i, int address) {
 
 void change_range(int start, int end, int from, int to) {
 	int i = 0;
-	
+
 	while (areas[i].address < start) i++;
 	if (areas[i].address != start && areas[i-1].pack == from)
 		split_area(i, start);
-	
+
 	while (areas[i].address < end) {
 		if (areas[i+1].address > end)
 			split_area(i+1, end);
-			
+
 		if (areas[i].pack == from) {
 			areas[i].pack = to;
 			if (areas[i-1].pack == to) {

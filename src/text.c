@@ -29,7 +29,7 @@ int calc_track_size_from_text(char *p) {
 			size += 4;
 		} else {
 			sprintf(buf, "Bad character: '%c'", c);
-			MessageBox2(buf, NULL, 48/*MB_ICONEXCLAMATION*/);
+			MessageBox2(buf, NULL, 48);
 			return -1;
 		}
 	}
@@ -42,7 +42,7 @@ BOOL text_to_track(char *str, struct track *t, BOOL is_sub) {
 	int size = calc_track_size_from_text(str);
 	if (size < 0)
 		return FALSE;
-	
+
 	int pos;
 	if (size == 0 && !is_sub) {
 		data = NULL;
@@ -114,7 +114,7 @@ int text_length(BYTE *start, BYTE *end) {
 void track_to_text(char *out, BYTE *track, int size) {
 	for (int len, pos = 0; pos < size; pos += len) {
 		int byte = track[pos];
-		
+
 		len = next_code(&track[pos]) - &track[pos];
 
 		if (byte == 0xEF) {
@@ -131,7 +131,7 @@ void track_to_text(char *out, BYTE *track, int size) {
 			}
 			if (byte < 0x80 || byte >= 0xE0) *out++ = ']';
 		}
-		
+
 		*out++ = ' ';
 	}
 	out[-1] = '\0';

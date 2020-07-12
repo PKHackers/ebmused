@@ -7,10 +7,10 @@ void order_insert(int pos, int pat) {
 	int *p = array_insert(&cur_song.order, &cur_song.order_length,
 		sizeof(int), pos);
 	*p = pat;
-	
+
 	if (cur_song.repeat_pos >= pos)
 		cur_song.repeat_pos++;
-	
+
 	if (state.ordnum >= pos) {
 		state.ordnum++;
 		pattop_state.ordnum++;
@@ -90,19 +90,19 @@ BOOL split_pattern(int pos) {
 		}
 		int before_size = splitptr - bp[ch].track;
 		int after_size = bp[ch].size - before_size;
-		
+
 		int after_subcount = c->sub_count ? c->sub_count - 1 : 0;
 		if (after_subcount) {
 			after_size += 4;
 			splitptr -= 4;
 			splitptr[3] -= after_subcount;
 		}
-		
+
 		ap[ch].size = after_size;
 		ap[ch].track = memcpy(malloc(after_size + 1), splitptr, after_size + 1);
 		if (after_subcount)
-			ap[ch].track[3] = after_subcount;	
-			
+			ap[ch].track[3] = after_subcount;
+
 		bp[ch].size = before_size;
 		bp[ch].track[before_size] = 0;
 	}
@@ -120,8 +120,7 @@ BOOL join_patterns() {
 	int next_pat = cur_song.order[state.ordnum+1];
 	int i;
 	if (this_pat == next_pat) {
-		MessageBox2("Next pattern is same as current",
-			"Cannot join", 48/*MB_ICONEXCLAMATION*/);
+		MessageBox2("Next pattern is same as current", "Cannot join", 48);
 		return FALSE;
 	}
 	for (i = 0; i < cur_song.order_length; i++) {
@@ -194,7 +193,7 @@ int create_sub(BYTE *start, BYTE *end, int *count) {
 
 	if (!validate_track(start, size, TRUE))
 		return -1;
-	
+
 	BYTE *p = start;
 	while (p < end) {
 		p = next_code(p);
