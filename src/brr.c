@@ -22,7 +22,7 @@ void decode_samples(WORD *ptrtable) {
 		} while ((b & 1) == 0);
 
 		sa->length = ((end - start) / 9) * 16;
-		if (spc[start] & 2) {
+		if (b & 2) { // The LOOP bit only matters for the last brr block
 			if (loop < start || loop >= end)
 				continue;
 			sa->loop_len = ((end - loop) / 9) * 16;
