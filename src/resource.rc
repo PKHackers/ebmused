@@ -107,37 +107,36 @@ BEGIN
 //	"Z", ID_UNDO, CONTROL, VIRTKEY
 END
 
-IDD_OPTIONS DIALOG 0, 0, 115, 62
+IDD_OPTIONS DIALOG 0, 0, 101, 62
 STYLE 0
-CAPTION "Sound options"
+CAPTION "Sound Options"
 FONT 8, "MS Shell Dlg"
 BEGIN
-	LTEXT "Sampling rate:", 0,        5,  5, 50, 14
-	EDITTEXT IDC_RATE,               60,  5, 35, 14, ES_RIGHT | ES_NUMBER
-	LTEXT "Hz", 0,                  100,  5, 10, 14
-	LTEXT "Buffer size:", 0,          5, 24, 50, 14
-	EDITTEXT IDC_BUFSIZE,            60, 24, 35, 14, ES_RIGHT | ES_NUMBER
-	DEFPUSHBUTTON "&OK", IDOK,        5, 43, 50, 14
-	PUSHBUTTON "&Cancel", IDCANCEL,  60, 43, 50, 14
+	LTEXT "Sample rate (Hz):", 0,     7,  7, 55, 14
+	EDITTEXT IDC_RATE,               65,  5, 30, 14, ES_RIGHT | ES_NUMBER
+	LTEXT "Buffer size:", 0,          7, 26, 50, 14
+	EDITTEXT IDC_BUFSIZE,            65, 24, 30, 14, ES_RIGHT | ES_NUMBER
+	DEFPUSHBUTTON "&Apply", IDOK,     5, 43, 44, 14
+	PUSHBUTTON "&Cancel", IDCANCEL,  51, 43, 44, 14
 END
 
-IDD_ABOUT DIALOG 0, 0, 200, 70
+IDD_ABOUT DIALOG 0, 0, 220, 42
 STYLE 0
-CAPTION "About EB Music Editor"
+CAPTION "About"
 FONT 8, "MS Shell Dlg"
 BEGIN
-	LTEXT "EarthBound Music Editor v2.3.0: released 2015-10-31\r\nProgrammed by Goplat\r\nAdditional programming by BlueStone\r\n\r\nDefault BGM titles based on 4F90A.txt by Michael1\r\n", 0,
-	                                                  5, 5, 190, 55
-	DEFPUSHBUTTON "&OK", IDOK,                        145, 51, 50, 14
+	LTEXT "EarthBound Music Editor v2.4.0\r\nReleased August 27, 2021\r\nProgrammed by Goplat\r\nAdditional programming by BlueStone, phoenixbound, and vince94\r\n", 0,
+	                                                   5,  5, 215, 55
+	DEFPUSHBUTTON "Fuzzy Pickles!", IDOK,            130,  8,  60, 14
 END
 
-IDD_TRANSPOSE DIALOG 0, 0, 115, 43
+IDD_TRANSPOSE DIALOG 0, 0, 98, 43
 STYLE 0
-CAPTION "Transpose selection"
+CAPTION "Transpose"
 FONT 8, "MS Shell Dlg"
 BEGIN
-	LTEXT "Change:", 0,               5,  5, 50, 14
-	EDITTEXT IDC_TRANSPOSE_OFF,      60,  5, 50, 14
-	DEFPUSHBUTTON "&OK", IDOK,        5, 24, 50, 14
-	PUSHBUTTON "&Cancel", IDCANCEL,  60, 24, 50, 14
+	LTEXT "Semitones:", 0,            7,  7, 50, 14
+	EDITTEXT IDC_TRANSPOSE_OFF,      50,  5, 42, 14
+	DEFPUSHBUTTON "&Apply", IDOK,     5, 24, 42, 14
+	PUSHBUTTON "&Cancel", IDCANCEL,  50, 24, 42, 14
 END

@@ -19,16 +19,18 @@ static int prev_chmask;
 static int selectedInstrument = 0;
 
 static const struct control_desc inst_list_controls[] = {
-	{ "Static",  10, 10,100, 20, "Samples:", 0, 0 },
+	{ "Static",  10, 10,100, 20, "Sample Directory:", 0, 0 },
 	{ "Static",  13, 30,180, 20, "    Strt Loop Size", 1, 0 },
-	{ "ListBox", 10, 50,180,-60, NULL, 2, WS_BORDER | WS_VSCROLL },
-	{ "Static", 200, 10,100, 20, "Instruments:", 0, 0 },
-	{ "Static", 203, 30,270, 20, "    S# A1 A2 G  Freq", 3, 0 },
-	{ "ListBox",200, 50,270,-60, NULL, 4, WS_BORDER | WS_VSCROLL },
-	{ "Static", 480, 10,100, 20, "Instrument test:", 0, 0},
-	{ "ebmused_insttest",480, 30,140,260, NULL, 3, 0 },
-	{ "Static", 480, 300,100, 20, "MIDI In Device:", 0, 0},
-	{ "ComboBox", 480, 320, 140, 200, NULL, IDC_MIDIINCOMBO, CBS_DROPDOWNLIST | WS_VSCROLL },
+	{ "ListBox", 10, 50,180,-60, NULL, 2, WS_BORDER | WS_VSCROLL }, //Sample Directory ListBox
+
+	{ "Static", 200, 10,100, 20, "Instrument Config:", 0, 0 },
+	{ "Static", 203, 30,160, 20, "S#  ADSR/Gain Tuning", 3, 0 },
+	{ "ListBox",200, 50,180,-60, NULL, 4, WS_BORDER | WS_VSCROLL }, //Instrument Config ListBox
+
+	{ "Static", 400, 10,100, 20, "Instrument test:", 0, 0},
+	{ "ebmused_insttest",400, 30,140,260, NULL, 3, 0 },
+	{ "Static", 400, 300,100, 20, "MIDI In Device:", 0, 0},
+	{ "ComboBox", 400, 320, 140, 200, NULL, IDC_MIDIINCOMBO, CBS_DROPDOWNLIST | WS_VSCROLL },
 };
 static struct window_template inst_list_template = {
 	inst_list_template_num, inst_list_template_lower, 0, 0, inst_list_controls
@@ -197,7 +199,7 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		ListBoxWndProc = (WNDPROC)SetWindowLong(instlist, GWL_WNDPROC,
 			(LONG)InstListWndProc);
 
-		for (int i = 0; i < 128; i++) {
+		for (int i = 0; i < 128; i++) { //filling out the Sample Directory ListBox
 			if (samp[i].data == NULL) continue;
 			WORD *ptr = (WORD *)&spc[0x6C00 + 4*i];
 			sprintf(buf, "%02X: %04X %04X %4d", i,
@@ -206,12 +208,12 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		}
 
 		unsigned char *p = valid_insts;
-		for (int i = 0; i < 64; i++) {
+		for (int i = 0; i < 64; i++) { //filling out the Instrument Config ListBox
 			unsigned char *inst = &spc[inst_base + i*6];
 			if (inst[4] == 0 && inst[5] == 0) continue;
-
-			sprintf(buf, "%02X: %02X %02X %02X %02X %2X%02X",
-				i, inst[0], inst[1], inst[2], inst[3], inst[4], inst[5]);
+			//            Index ADSR            Tuning
+			sprintf(buf, "%02X: %02X %02X %02X  %02X%02X",
+				inst[0], inst[1], inst[2], inst[3], inst[4], inst[5]);
 			SendMessage(instlist, LB_ADDSTRING, 0, (LPARAM)buf);
 			*p++ = i;
 		}

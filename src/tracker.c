@@ -31,17 +31,17 @@ static char cs_title[] = "Channel state (0)";
 
 static const struct control_desc editor_controls[] = {
 // Upper
-	{ "Static",          10, 10, 35, 20, "Order:", 0, 0 },
-	{ "ebmused_order",   50, 10,-420,20, NULL, IDC_ORDER, WS_BORDER },
-	{ "Static",        -365, 10, 45, 20, "Repeat", IDC_REP_CAPTION, 0 },
-	{ "Edit",          -315, 10, 30, 20, NULL, IDC_REPEAT, WS_BORDER | ES_NUMBER },
-	{ "Static",        -280, 10, 45, 20, "Rep. pos", IDC_REP_POS_CAPTION, 0 },
-	{ "Edit",          -230, 10, 30, 20, NULL, IDC_REPEAT_POS, WS_BORDER | ES_NUMBER },
-	{ "Static",        -195, 10, 45, 20, "Pattern:", IDC_PAT_LIST_CAPTION, 0 },
-	{ "ComboBox",      -145, 10, 40,300, NULL, IDC_PAT_LIST, CBS_DROPDOWNLIST | WS_VSCROLL },
-	{ "Button",        -100, 10, 30, 20, "Add", IDC_PAT_ADD, 0 },
-	{ "Button",         -70, 10, 30, 20, "Ins", IDC_PAT_INS, 0 },
-	{ "Button",         -40, 10, 30, 20, "Del", IDC_PAT_DEL, 0 },
+	{ "Static",          10, 13, 42, 20, "Patterns:", 0, 0 }, //"Order" label
+	{ "ebmused_order",   56, 10,-420,20, NULL, IDC_ORDER, WS_BORDER }, //Pattern order list
+	{ "Static",        -360, 13, 55, 20, "Loop Song:", IDC_REP_CAPTION, 0 },
+	{ "Edit",          -303, 10, 30, 20, NULL, IDC_REPEAT, WS_BORDER | ES_NUMBER }, //Loop textbox
+	{ "Static",        -266, 13, 40, 20, "Position:", IDC_REP_POS_CAPTION, 0 },
+	{ "Edit",          -223, 10, 30, 20, NULL, IDC_REPEAT_POS, WS_BORDER | ES_NUMBER }, //Loop position textbox
+	{ "Static",        -187, 13, 45, 20, "Pattern:", IDC_PAT_LIST_CAPTION, 0 },
+	{ "ComboBox",      -147,  9, 40,300, NULL, IDC_PAT_LIST, CBS_DROPDOWNLIST | WS_VSCROLL },
+	{ "Button",        -100,  9, 30, 20, "Add", IDC_PAT_ADD, 0 },
+	{ "Button",         -70,  9, 30, 20, "Ins", IDC_PAT_INS, 0 },
+	{ "Button",         -40,  9, 30, 20, "Del", IDC_PAT_DEL, 0 },
 	{ "ebmused_tracker", 10, 60,-20,-70, NULL, IDC_TRACKER, WS_BORDER | WS_VSCROLL },
 // Lower
 	{ "ebmused_state",   10,  0,430,-10, NULL, IDC_STATE, 0 },
@@ -1081,8 +1081,8 @@ void editor_command(int id) {
 		break;
 	case ID_MAKE_SUBROUTINE: {
 		if (cursor.sub_count) {
-			MessageBox2("Cursor is already in a subroutine",
-				"Make subroutine", MB_ICONEXCLAMATION);
+			MessageBox2("Cursor is already in a subroutine!",
+				"Make Subroutine", MB_ICONEXCLAMATION);
 			break;
 		}
 		BYTE *start = sel_start, *end = sel_end;

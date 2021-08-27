@@ -37,32 +37,38 @@ static int sort_by;
 static int inmem_sel;
 
 static const struct control_desc pack_list_controls[] = {
-// Upper
-	{ "Static",   10, 10,200, 18, "Packs in ROM file:", IDC_RLIST_CAPTION, 0 },
+	//The format here is X position, Y position, height, and width. The negative numbers mean it starts from the bottom
+	//The upper half of the SPC Packs tab - list of all packs in the game
+	{ "Static",   10, 10,100, 18, "All Packs:", IDC_RLIST_CAPTION, 0 },
 	{ WC_LISTVIEW,10, 30,-20,-60, NULL, IDC_ROM_LIST, WS_BORDER | LVS_REPORT | LVS_SINGLESEL },
-	{ "Static",   10,-25, 50, 20, "Range:", IDC_RANGE_OPTS_HDR, 0 },
-	{ "Edit",     60,-25, 60, 20, NULL, IDC_RANGE_START, WS_BORDER },
-	{ "Static",  120,-25, 20, 20, "to", IDC_RANGE_TO, SS_CENTER },
-	{ "Edit",    140,-25, 60, 20, NULL, IDC_RANGE_END, WS_BORDER },
-	{ "Button",  205,-25, 50, 20, "Add", IDC_RANGE_ADD, 0 },
-	{ "Button",  260,-25, 50, 20, "Remove", IDC_RANGE_REMOVE, 0 },
-// Lower
-	{ "Static",   10, 10,200, 18, "Unsaved packs:", IDC_MLIST_CAPTION, 0 },
+
+	{ "Static",   10,-22, 35, 20, "Range:", IDC_RANGE_OPTS_HDR, 0 },
+	{ "Edit",     50,-25, 60, 20, NULL, IDC_RANGE_START, WS_BORDER }, //Range Start textbox
+	{ "Static",  110,-22, 19, 18, "to", IDC_RANGE_TO, SS_CENTER },
+	{ "Edit",    129,-25, 60, 20, NULL, IDC_RANGE_END, WS_BORDER }, //Range End textbox
+	{ "Button",  195,-25, 52, 20, "Add", IDC_RANGE_ADD, 0 }, //Add button
+	{ "Button",  249,-25, 52, 20, "Remove", IDC_RANGE_REMOVE, 0 }, //Remove button
+
+	//The lower half of the SPC Packs tab - info about anything that's been modified
+	{ "Static",   10, 10,100, 18, "Modified packs:", IDC_MLIST_CAPTION, 0 },
 	{ WC_LISTVIEW,10, 30,-20,-90, NULL, IDC_INMEM_LIST, WS_BORDER | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS },
 
-	{ "Static",   10,-55, 50, 20, "Pack:", IDC_PACK_OPTS_HDR, WS_DISABLED },
-	{ "Button",   60,-55, 80, 20, "Save", IDC_PACK_SAVE, WS_DISABLED },
-	{ "Edit",    160,-55, 60, 20, NULL, IDC_PACK_ADDRESS, WS_BORDER | WS_DISABLED },
-	{ "Button",  225,-55, 40, 20, "Move", IDC_PACK_MOVE, WS_DISABLED },
-	{ "Button",  340,-55, 40, 20, "Reset", IDC_PACK_RESET, WS_DISABLED },
+	{ "Static",   10,-52,130, 20, "ROM address for the pack:", IDC_PACK_OPTS_HDR, WS_DISABLED },
+	{ "Edit",    145,-55, 60, 20, NULL, IDC_PACK_ADDRESS, WS_BORDER | WS_DISABLED }, //ROM Address textbox
+	{ "Button",  210,-55, 40, 20, "Apply", IDC_PACK_MOVE, WS_DISABLED }, //ROM Address Apply button
 
-	{ "Static",   10,-30, 50, 20, "Song:", IDC_SONG_OPTS_HDR, WS_DISABLED },
-	{ "Edit",     60,-30, 40, 20, NULL, IDC_SONG_ADDRESS, WS_BORDER | WS_DISABLED },
-	{ "Button",  105,-30, 40, 20, "New", IDC_SONG_NEW, WS_DISABLED },
-	{ "Button",  150,-30, 40, 20, "Move", IDC_SONG_MOVE, WS_DISABLED },
-	{ "Button",  210,-30, 40, 20, "Up", IDC_SONG_UP, WS_DISABLED },
-	{ "Button",  255,-30, 40, 20, "Down", IDC_SONG_DOWN, WS_DISABLED },
-	{ "Button",  340,-30, 40, 20, "Del", IDC_SONG_DEL, WS_DISABLED },
+	{ "Static",   10,-27,130, 20, "ARAM offset for the song:", IDC_SONG_OPTS_HDR, WS_DISABLED },
+	{ "Edit",    145,-30, 60, 20, NULL, IDC_SONG_ADDRESS, WS_BORDER | WS_DISABLED }, //ARAM Address textbox
+	{ "Button",  210,-30, 40, 20, "Apply", IDC_SONG_MOVE, WS_DISABLED }, //ARAM Address Apply button
+
+	//Buttons on the right for modifying the pack
+	{ "Button",  290,-55, 118, 20, "Save Changes", IDC_PACK_SAVE, WS_DISABLED }, //Same as Ctrl-S I think
+	{ "Button",  410,-55, 118, 20, "Revert", IDC_PACK_RESET, WS_DISABLED }, //Wipes all changes
+	{ "Button",  290,-30, 78, 20, "New Song", IDC_SONG_NEW, WS_DISABLED }, //adds a new song entry in the current modified pack
+	{ "Button",  370,-30, 78, 20, "Delete Song", IDC_SONG_DEL, WS_DISABLED }, //Deleltes the currently-selected song
+	{ "Button",  450,-30, 38, 20, "Up", IDC_SONG_UP, WS_DISABLED }, //Moves the currently-selected song
+	{ "Button",  490,-30, 38, 20, "Down", IDC_SONG_DOWN, WS_DISABLED },
+
 };
 
 static struct window_template pack_list_template = {
