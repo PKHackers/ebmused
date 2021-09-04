@@ -351,7 +351,7 @@ LRESULT CALLBACK EditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				hWnd, (HMENU)(IDC_ENABLE_CHANNEL_0 + i), hinstance, NULL);
 			SendMessage(b, BM_SETCHECK, chmask >> i & 1, 0);
 		}
-		EditWndProc = (WNDPROC)SetWindowLong(GetDlgItem(hWnd, IDC_EDITBOX), GWL_WNDPROC, (LONG)TrackEditWndProc);
+		EditWndProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(hWnd, IDC_EDITBOX), GWLP_WNDPROC, (LONG_PTR)TrackEditWndProc);
 		break;
 	case WM_SONG_IMPORTED:
 	case WM_SONG_LOADED:

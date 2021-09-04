@@ -47,15 +47,25 @@ void decode_samples(WORD *ptrtable) {
 				if (s >= 8) s -= 16;
 
 				s <<= range;
+				if (range > 12) {
+					if (s < 0) s = -4096;
+					else       s = 0;
+				}
+
 				if (filter) {
 					switch (filter) {
 						case 1: s += p[-1] * 15 >> 4; break;
 						case 2: s += (p[-1] * 61 >> 5) - (p[-2] * 15 >> 4); break;
 						case 3: s += (p[-1] * 115 >> 6) - (p[-2] * 13 >> 4); break;
 					}
-					if (s < -32768) s = -32768;
-					else if (s > 32767) s = 32767;
+					// Clamp to [-65536, 65534] and then have it wrap around at
+					// [-32768, 32767]
+					if (s < -65536) s = (-65536 + 65536);
+					else if (s > 65534) s = (65534 - 65536);
+					else if (s < -32768) s += 65536;
+					else if (s > 32767) s -= 65536;
 				}
+
 				*p++ = s;
 			}
 		}

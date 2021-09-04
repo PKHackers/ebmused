@@ -196,8 +196,8 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		// Insert a custom window procedure on the instrument list, so we
 		// can see WM_KEYDOWN and WM_KEYUP messages for instrument testing.
 		// (LBS_WANTKEYBOARDINPUT doesn't notify on WM_KEYUP)
-		ListBoxWndProc = (WNDPROC)SetWindowLong(instlist, GWL_WNDPROC,
-			(LONG)InstListWndProc);
+		ListBoxWndProc = (WNDPROC)SetWindowLongPtr(instlist, GWLP_WNDPROC,
+			(LONG_PTR)InstListWndProc);
 
 		for (int i = 0; i < 128; i++) { //filling out the Sample Directory ListBox
 			if (samp[i].data == NULL) continue;
