@@ -99,7 +99,7 @@ int text_length(BYTE *start, BYTE *end) {
 		} else {
 			len = 1 + code_length[byte - 0xE0];
 			if (byte == 0xEF) {
-				char buf[11];
+				char buf[12];
 				textlength += sprintf(buf, "*%d,%d ", p[1] | p[2] << 8, p[3]);
 			} else {
 				textlength += 3*len + 2;

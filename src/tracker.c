@@ -310,7 +310,7 @@ static void goto_order(int pos) {
 }
 
 static void pattern_added() {
-	char buf[6];
+	char buf[12];
 	sprintf(buf, "%d", cur_song.patterns - 1);
 	SendDlgItemMessage(hwndEditor, IDC_PAT_LIST, CB_ADDSTRING,
 		0, (LPARAM)buf);
@@ -361,7 +361,7 @@ LRESULT CALLBACK EditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		HWND cb = GetDlgItem(hWnd, IDC_PAT_LIST);
 		SendMessage(cb, CB_RESETCONTENT, 0, 0);
 		for (int i = 0; i < cur_song.patterns; i++) {
-			char buf[5];
+			char buf[11];
 			sprintf(buf, "%d", i);
 			SendMessage(cb, CB_ADDSTRING, 0, (LPARAM)buf);
 		}
@@ -478,7 +478,7 @@ LRESULT CALLBACK OrderWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			char buf[6];
 			int len = sprintf(buf, "%d", cur_song.order[i]);
 			rc.right = rc.left + 25;
-			COLORREF tc, bc;
+			COLORREF tc = 0, bc = 0;
 			if (i == pattop_state.ordnum) {
 				tc = SetTextColor(hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
 				bc = SetBkColor(hdc, GetSysColor(COLOR_HIGHLIGHT));

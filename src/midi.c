@@ -21,12 +21,12 @@ void closeMidiInDevice() {
 void openMidiInDevice(int deviceId, void* callback) {
 	if (deviceId > -1) {
 		unsigned int err;
-		if (err = midiInOpen(&hMidiIn, deviceId, (DWORD)(void*)callback, 0, CALLBACK_FUNCTION)) {
+		if ((err = midiInOpen(&hMidiIn, deviceId, (DWORD)(void*)callback, 0, CALLBACK_FUNCTION))) {
 			outputMidiError(err);
 			return;
 		}
 
-		if (err = midiInStart(hMidiIn)) {
+		if ((err = midiInStart(hMidiIn))) {
 			midiInClose(hMidiIn);
 			outputMidiError(err);
 			return;

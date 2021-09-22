@@ -213,7 +213,7 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 	s->sub = NULL;
 
 	wp = (WORD *)&spc[first_pattern];
-	BOOL first;
+	BOOL first = 0;
 	for (int trk = 0; trk < s->patterns * 8; trk++) {
 		struct track *t = &s->pattern[0][0] + trk;
 		first |= ((trk & 7) == 0);

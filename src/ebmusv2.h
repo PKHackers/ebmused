@@ -173,6 +173,7 @@ void pattern_delete(int pat);
 BOOL split_pattern(int pos);
 BOOL join_patterns(void);
 int create_sub(BYTE *start, BYTE *end, int *count);
+void order_delete(int pos);
 
 // sound.c
 extern int mixrate;
