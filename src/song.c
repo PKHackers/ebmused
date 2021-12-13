@@ -113,7 +113,7 @@ int compile_song(struct song *s) {
 	return (tout - spc) - s->address;
 }
 
-int decompile_song(struct song *s, int start_addr, int end_addr) {
+void decompile_song(struct song *s, int start_addr, int end_addr) {
 	char *error = errbuf;
 	s->address = start_addr;
 	s->changed = FALSE;
@@ -205,7 +205,6 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 		s->order[i] = pat >> 4;
 	}
 
-	int next_sub = tracks_end + 1;
 	WORD *sub_table = NULL;
 	s->patterns = pat_bytes >> 4;
 	s->pattern = calloc(sizeof(*s->pattern), s->patterns);
@@ -247,15 +246,19 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 		for (BYTE *p = t->track; p < t->track + t->size; p = next_code(p)) {
 			if (*p != 0xEF) continue;
 			int sub_ptr = *(WORD *)(p + 1);
-			int i;
-			if (sub_ptr == next_sub) {
-				i = s->subs++;
+			int sub_entry;
+
+			// find existing entry in sub_table
+			for (sub_entry = 0; sub_entry < s->subs && sub_table[sub_entry] != sub_ptr; sub_entry++);
+			if (sub_entry == s->subs) {
+				// sub_entry doesn't already exist in sub_table; create it
+				sub_entry = s->subs++;
 
 				sub_table = realloc(sub_table, sizeof(WORD) * s->subs);
-				sub_table[i] = sub_ptr;
+				sub_table[sub_entry] = sub_ptr;
 
 				s->sub = realloc(s->sub, sizeof(struct track) * s->subs);
-				struct track *st = &s->sub[i];
+				struct track *st = &s->sub[sub_entry];
 
 				BYTE *substart = &spc[sub_ptr];
 				BYTE *subend = substart;
@@ -267,16 +270,8 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 					error = e;
 					goto error3;
 				}
-
-				next_sub = (subend + 1) - spc;
-			} else {
-				for (i = 0; i < s->subs && sub_table[i] != sub_ptr; i++);
-				if (i == s->subs) {
-					sprintf(error, "Unexpected subroutine call %04X (next=%04X)", sub_ptr, next_sub);
-					goto error3;
-				}
 			}
-			*(WORD *)(p + 1) = i;
+			*(WORD *)(p + 1) = sub_entry;
 		}
 		char *e = internal_validate_track(t->track, t->size, FALSE);
 		if (e) {
@@ -288,7 +283,7 @@ int decompile_song(struct song *s, int start_addr, int end_addr) {
 	}
 	free(sub_table);
 
-	return next_sub;
+	return;
 
 error3:
 	free(sub_table);
@@ -304,7 +299,7 @@ error1:
 	s->order_length = 0;
 	decomp_error = error;
 	printf("Can't decompile: %s\n", error);
-	return 0;
+	return;
 }
 
 void free_song(struct song *s) {
