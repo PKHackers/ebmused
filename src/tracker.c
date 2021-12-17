@@ -299,8 +299,9 @@ static void goto_order(int pos) {
 	initialize_state();
 	for (i = 0; i < pos; i++) {
 		int ch;
-		for (ch = 0; ch < 8 && state.chan[ch].ptr != NULL; ch++)
-		// an empty pattern will loop forever, so skip it
+		// Determine number of null tracks
+		for (ch = 0; ch < 8 && state.chan[ch].ptr == NULL; ch++) { /* do nothing */ }
+		// If some tracks were not null, then simulate them without generating audio.
 		if (ch != 8) {
 			while (do_cycle_no_sound(&state));
 		}
