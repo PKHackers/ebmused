@@ -163,7 +163,7 @@ extern int check_range(int start, int end, int pack);
 extern char *decomp_error;
 BOOL validate_track(BYTE *data, int size, BOOL is_sub);
 int compile_song(struct song *s);
-BOOL decompile_song(struct song *s, int start_addr, int end_addr);
+void decompile_song(struct song *s, int start_addr, int end_addr);
 void free_song(struct song *s);
 
 // songed.c
