@@ -298,11 +298,16 @@ static void goto_order(int pos) {
 	int i;
 	initialize_state();
 	for (i = 0; i < pos; i++) {
-		int ch;
-		for (ch = 0; ch < 8 && state.chan[ch].ptr != NULL; ch++)
-		// an empty pattern will loop forever, so skip it
-		if (ch != 8) {
-			while (do_cycle_no_sound(&state));
+		// If there are any non-null tracks in this pattern, then
+		// we want to step through the whole pattern once by calling
+		// `do_cycle_no_sound` until it returns false.
+		for (int ch = 0; ch < 8; ch++) {
+			if (state.chan[ch].ptr != NULL) {
+				// We've found a non-null track. Simulate the current pattern.
+				while (do_cycle_no_sound(&state));
+				// We're done with the current pattern. Move on to the next one.
+				break;
+			}
 		}
 		load_pattern();
 	}
