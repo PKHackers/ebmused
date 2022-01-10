@@ -188,11 +188,6 @@ void decompile_song(struct song *s, int start_addr, int end_addr) {
 		tracks_end = end - spc;
 	}
 
-	if (spc[tracks_end] != 0) {
-		sprintf(errbuf, "No ending 0 byte after tracks (%02X)", spc[tracks_end]);
-		goto error1;
-	}
-
 	// Now the number of patterns is known, so go back and get the order
 	s->order = malloc(sizeof(int) * s->order_length);
 	wp = (WORD *)&spc[start_addr];
@@ -212,10 +207,8 @@ void decompile_song(struct song *s, int start_addr, int end_addr) {
 	s->sub = NULL;
 
 	wp = (WORD *)&spc[first_pattern];
-	BOOL first = 0;
 	for (int trk = 0; trk < s->patterns * 8; trk++) {
 		struct track *t = &s->pattern[0][0] + trk;
-		first |= ((trk & 7) == 0);
 		int start = *wp++;
 		if (start == 0) continue;
 		if (start < tracks_start || start >= tracks_end) {
@@ -223,23 +216,22 @@ void decompile_song(struct song *s, int start_addr, int end_addr) {
 			goto error3;
 		}
 
-		int next = 0;
-		WORD *nextp = wp;
-		while (nextp < (WORD *)&spc[tracks_start] && (next = *nextp) == 0)
-			nextp++;
-		if (next == 0) next = tracks_end; // last track
-
-		if (next <= start) {
-			sprintf(errbuf, "Tracks out of order (%04X, %04X)", start, next);
-			goto error3;
+		// Go through track list (patterns) and find first track that has an address higher than us.
+		// If we find a track after us, we'll assume that this track doesn't overlap with that one.
+		// If we don't find one, then next will remain at 0x10000 and we will search until the
+		// end of memory to find a 00 byte to terminate the track.
+		int next = 0x10000; // offset of following track
+		for (int track_ind = 0; track_ind < (s->patterns * 8); track_ind += 1) {
+			int track_addr = ((WORD *)(spc + first_pattern))[track_ind];
+			if (track_addr < next && track_addr > start) {
+				next = track_addr;
+			}
 		}
+		// Determine the end of the track.
+		BYTE *track_end;
+		for (track_end = spc + start; track_end < spc + next && *track_end != 0; track_end = next_code(track_end)) {}
 
-		if (first && spc[--next] != 0) {
-			sprintf(errbuf, "Track %d.%d not zero terminated", trk >> 3, trk & 7);
-			goto error3;
-		}
-
-		t->size = next - start;
+		t->size = (track_end - spc) - start;
 		t->track = memcpy(malloc(t->size + 1), &spc[start], t->size);
 		t->track[t->size] = 0;
 
@@ -278,8 +270,6 @@ void decompile_song(struct song *s, int start_addr, int end_addr) {
 			error = e;
 			goto error3;
 		}
-
-		first = FALSE;
 	}
 	free(sub_table);
 
