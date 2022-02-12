@@ -48,7 +48,7 @@ BOOL save_all_packs(void);
 
 // brr.c
 extern struct sample samp[128];
-void decode_samples(const WORD *ptrtable);
+void decode_samples(const unsigned char *ptrtable);
 void free_samples(void);
 
 // ctrltbl.c

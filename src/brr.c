@@ -68,11 +68,32 @@ static void decode_brr_block(int16_t *buffer, const uint8_t *block) {
 	}
 }
 
-void decode_samples(const WORD *ptrtable) {
-	for (int sn = 0; sn < 128; sn++) {
+static int get_full_loop_len(const struct sample *sa, const int16_t *next_block, int first_loop_start) {
+	int loop_start = sa->length - sa->loop_len;
+	int no_match_found = TRUE;
+	while (loop_start >= first_loop_start && no_match_found) {
+		// If the first two samples in a loop are the same, the rest all will be too.
+		// BRR filters can rely on, at most, two previous samples.
+		if (sa->data[loop_start] == next_block[0] &&
+				sa->data[loop_start + 1] == next_block[1]) {
+			no_match_found = FALSE;
+		} else {
+			loop_start -= sa->loop_len;
+		}
+	}
+
+	if (loop_start >= first_loop_start)
+		return sa->length - loop_start;
+	else
+		return -1;
+}
+
+void decode_samples(const unsigned char *ptrtable) {
+	for (unsigned sn = 0; sn < 128; sn++) {
 		struct sample *sa = &samp[sn];
-		int start = *ptrtable++;
-		int loop  = *ptrtable++;
+		int start = ptrtable[0] | (ptrtable[1] << 8);
+		int loop  = ptrtable[2] | (ptrtable[3] << 8);
+		ptrtable += 4;
 
 		sa->data = NULL;
 		if (start == 0 || start == 0xffff)
@@ -95,41 +116,76 @@ void decode_samples(const WORD *ptrtable) {
 		size_t allocation_size = sizeof(int16_t) * (2 + sa->length + 1);
 
 		int16_t *p = malloc(allocation_size);
-		if (!p)
+		if (!p) {
+			printf("malloc failed in BRR decoding (sn: %02X)\n", sn);
 			continue;
+		}
 /*		printf("Sample %2d: %04X(%04X)-%04X length %d looplen %d\n",
 			sn, start, loop, end, sa->length, sa->loop_len);*/
 
-		// A custom sample might try to rely on past data that doesn't exist, so provide some.
+		// A custom sample might try to rely on past data that doesn't exist, so provide some, just
+		// to avoid a crash. (We currently just zero-initialize this. Most BRR converters out there
+		// don't struggle with this, as far as I know.)
 		p[0] = 0;
 		p[1] = 0;
 		sa->data = &p[2];
 		p = &p[2];
 
-		int needs_another_loop = FALSE;
+		int needs_another_loop;
+		int decoding_start = start;
+		int times = 0;
 
 		do {
-			for (int pos = start; pos < end; pos += BRR_BLOCK_SIZE) {
+			needs_another_loop = FALSE;
+
+			for (int pos = decoding_start; pos < end; pos += BRR_BLOCK_SIZE) {
 				decode_brr_block(p, &spc[pos]);
 				p += 16;
 			}
 
-			if (sa->loop_len) {
-				int16_t after_loop[18] = {0};
+			if (sa->loop_len != 0) {
+				decoding_start = loop;
+
+				int16_t after_loop[18];
 				after_loop[0] = p[-2];
 				after_loop[1] = p[-1];
 
 				decode_brr_block(&after_loop[2], &spc[loop]);
-				needs_another_loop = after_loop[2] != sa->data[sa->length - sa->loop_len] ||
-									after_loop[3] != sa->data[sa->length - sa->loop_len + 1];
-				if (needs_another_loop) {
-					printf("We need another loop! sample %02X\n", (unsigned)sn);
+				int full_loop_len = get_full_loop_len(sa, &after_loop[2], (loop - start) / BRR_BLOCK_SIZE * 16);
+
+				if (full_loop_len == -1) {
+					needs_another_loop = TRUE;
+					//printf("We need another loop! sample %02X (old loop start samples: %d %d)\n", (unsigned)sn,
+					//	sa->data[sa->length - sa->loop_len],
+					//	sa->data[sa->length - sa->loop_len + 1]);
+					ptrdiff_t diff = p - sa->data;
+					int16_t *new_stuff = realloc(sa->data - 2, (2 + sa->length + sa->loop_len + 1) * sizeof(int16_t));
+					if (new_stuff == NULL) {
+						printf("realloc failed in BRR decoding (sn: %02X)\n", sn);
+						// TODO What do we do now? Replace this with something better
+						needs_another_loop = FALSE;
+						break;
+					}
+					p = (new_stuff + 2) + diff;
+					sa->length += sa->loop_len;
+					sa->data = new_stuff + 2;
+				} else {
+					sa->loop_len = full_loop_len;
+					// needs_another_loop is already false
 				}
 			}
-		} while (0 /* needs_another_loop */);
+
+			// In the vanilla game, the most iterations needed is 48 (for sample 0x17 in pack 5).
+			// Most samples need less than 10.
+			++times;
+		} while (needs_another_loop && times < 64);
+
+		if (times == 64) {
+			printf("Sample %02X took too many iterations to get into a cycle\n", sn);
+		}
 
 		// Put an extra sample at the end for easier interpolation
-		*p = sa->loop_len ? sa->data[sa->length - sa->loop_len] : 0;
+		*p = sa->loop_len != 0 ? sa->data[sa->length - sa->loop_len] : 0;
 	}
 }
 
