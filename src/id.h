@@ -6,7 +6,8 @@
 #define ID_IMPORT 103
 #define ID_IMPORT_SPC 104
 #define ID_EXPORT 105
-#define ID_EXIT 106
+#define ID_EXPORT_SPC 106
+#define ID_EXIT 107
 #define ID_UNDO 110
 #define ID_CUT 111
 #define ID_COPY 112
@@ -45,3 +46,5 @@
 
 #define IDD_TRANSPOSE 3
 #define IDC_TRANSPOSE_OFF 3
+
+#define IDRC_SPC 1

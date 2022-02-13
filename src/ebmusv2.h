@@ -27,6 +27,7 @@ extern BYTE packs_loaded[3];
 extern int current_block;
 extern int octave;
 extern int midiDevice;
+extern int selected_bgm;
 extern struct song cur_song;
 extern struct song_state pattop_state, state;
 extern HINSTANCE hinstance;
@@ -137,6 +138,7 @@ void array_delete(void *array, int *size, int elemsize, int index);
 // packs.c
 extern const DWORD pack_orig_crc[];
 void free_pack(struct pack *p);
+struct pack *load_pack(int pack);
 void load_songpack(int new_pack);
 struct block *get_cur_block(void);
 void select_block(int block);

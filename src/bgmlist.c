@@ -29,7 +29,7 @@
 #define IDC_LOAD_BGM 40
 #define IDC_CHANGE_BGM 41
 
-static int selected_bgm;
+int selected_bgm;
 static char bgm_num_text[32] = "BGM --:";
 
 static const struct control_desc bgm_list_controls[] = {
