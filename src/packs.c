@@ -42,6 +42,28 @@ void free_pack(struct pack *p) {
 	p->status = 0;
 }
 
+struct pack *load_pack(int pack) {
+	struct pack *mp = &inmem_packs[pack];
+	if (!(mp->status & IPACK_INMEM)) {
+		struct pack *rp = &rom_packs[pack];
+		mp->start_address = rp->start_address;
+		mp->block_count = rp->block_count;
+		mp->blocks = memcpy(malloc(mp->block_count * sizeof(struct block)),
+			rp->blocks, mp->block_count * sizeof(struct block));
+		struct block *b = mp->blocks;
+		fseek(rom, mp->start_address - 0xC00000 + rom_offset, SEEK_SET);
+		for (int i = 0; i < mp->block_count; i++) {
+			fseek(rom, 4, SEEK_CUR);
+			b->data = malloc(b->size);
+			fread(b->data, b->size, 1, rom);
+			b++;
+		}
+		mp->status |= IPACK_INMEM;
+	}
+
+	return mp;
+}
+
 // Changes the current song pack.
 // This should always be followed by a call to select_block()
 void load_songpack(int new_pack) {
@@ -59,23 +81,7 @@ void load_songpack(int new_pack) {
 	if (new_pack >= NUM_PACKS)
 		return;
 
-	struct pack *mp = &inmem_packs[new_pack];
-	if (!(mp->status & IPACK_INMEM)) {
-		struct pack *rp = &rom_packs[new_pack];
-		mp->start_address = rp->start_address;
-		mp->block_count = rp->block_count;
-		mp->blocks = memcpy(malloc(mp->block_count * sizeof(struct block)),
-			rp->blocks, mp->block_count * sizeof(struct block));
-		struct block *b = mp->blocks;
-		fseek(rom, mp->start_address - 0xC00000 + rom_offset, SEEK_SET);
-		for (int i = 0; i < mp->block_count; i++) {
-			fseek(rom, 4, SEEK_CUR);
-			b->data = malloc(b->size);
-			fread(b->data, b->size, 1, rom);
-			b++;
-		}
-		mp->status |= IPACK_INMEM;
-	}
+	load_pack(new_pack);
 }
 
 struct block *get_cur_block() {

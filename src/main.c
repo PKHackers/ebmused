@@ -56,21 +56,23 @@ static const WNDPROC tab_wndproc[NUM_TABS] = {
 static char filename[MAX_PATH];
 static OPENFILENAME ofn;
 static char *open_dialog(BOOL (WINAPI *func)(LPOPENFILENAME),
-	char *filter, DWORD flags)
+	char *filter, char *extension, DWORD flags)
 {
 	*filename = '\0';
 	ofn.lStructSize = sizeof ofn;
 	ofn.hwndOwner = hwndMain;
 	ofn.lpstrFilter = filter;
+	ofn.lpstrDefExt = extension;
 	ofn.lpstrFile = filename;
 	ofn.nMaxFile = MAX_PATH;
-	ofn.Flags = flags;
+	ofn.Flags = flags | OFN_NOCHANGEDIR;
 	return func(&ofn) ? filename : NULL;
 }
 
 BOOL get_original_rom() {
 	char *file = open_dialog(GetOpenFileName,
 		"SNES ROM files (*.smc, *.sfc)\0*.smc;*.sfc\0All Files\0*.*\0",
+		NULL,
 		OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
 	BOOL ret = file && open_orig_rom(file);
 	metadata_changed |= ret;
@@ -106,7 +108,7 @@ static void import() {
 	}
 
 	char *file = open_dialog(GetOpenFileName,
-		"EarthBound Music files (*.ebm)\0*.ebm\0All Files\0*.*\0", OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
+		"EarthBound Music files (*.ebm)\0*.ebm\0All Files\0*.*\0", NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
 	if (!file) return;
 
 	FILE *f = fopen(file, "rb");
@@ -131,6 +133,7 @@ err1:
 /*static void import_spc() {
 	char *file = open_dialog(GetOpenFileName,
 		"SPC Savestates (*.spc)\0*.spc\0All Files\0*.*\0",
+		NULL,
 		OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
 	if (!file) return;
 
@@ -168,7 +171,7 @@ static void export() {
 		return;
 	}
 
-	char *file = open_dialog(GetSaveFileName, "EarthBound Music files (*.ebm)\0*.ebm\0", 0);
+	char *file = open_dialog(GetSaveFileName, "EarthBound Music files (*.ebm)\0*.ebm\0", "ebm", OFN_OVERWRITEPROMPT);
 	if (!file) return;
 
 	FILE *f = fopen(file, "wb");
@@ -179,6 +182,65 @@ static void export() {
 	fwrite(b, 4, 1, f);
 	fwrite(b->data, b->size, 1, f);
 	fclose(f);
+}
+
+static void export_spc() {
+	if (cur_song.order_length < 1) {
+		MessageBox2("No song loaded.", "Export SPC", MB_ICONEXCLAMATION);
+	} else {
+		char *file = open_dialog(GetSaveFileName, "SPC files (*.spc)\0*.spc\0", "spc", OFN_OVERWRITEPROMPT);
+		if (file) {
+			FILE *f = fopen(file, "wb");
+			if (!f) {
+				MessageBox2(strerror(errno), "Export SPC", MB_ICONEXCLAMATION);
+			} else {
+				HRSRC res = FindResource(hinstance, MAKEINTRESOURCE(IDRC_SPC), RT_RCDATA);
+				HGLOBAL res_handle = res ? LoadResource(NULL, res) : NULL;
+				if (!res_handle) {
+					MessageBox2("Blank SPC could not be loaded.", "Export SPC", MB_ICONEXCLAMATION);
+				} else {
+					BYTE* res_data = (BYTE*)LockResource(res_handle);
+					DWORD spc_size = SizeofResource(NULL, res);
+					const WORD header_size = 0x100;
+					const WORD footer_size = 0x100;
+
+					// Copy blank SPC to byte array
+					BYTE new_spc[spc_size];
+					memcpy(new_spc, res_data, sizeof(new_spc));
+
+					// Copy packs/blocks to byte array
+					for (int pack = 0; pack < 3; pack++) {
+						if (packs_loaded[pack] < NUM_PACKS) {
+							struct pack *p = load_pack(packs_loaded[pack]);
+							for (int block = 0; block < p->block_count; block++) {
+								struct block *b = &p->blocks[block];
+
+								// Copy block to new_spc
+								const int size = min(b->size, sizeof(new_spc) - b->spc_address - footer_size);
+								memcpy(new_spc + header_size + b->spc_address, b->data, size);
+
+								if (size > sizeof(new_spc) - footer_size) {
+									printf("SPC pack %d block %d too large.\n", packs_loaded[pack], block);
+								}
+							}
+						}
+					}
+
+					// Set pattern repeat location
+					const WORD repeat_address = cur_song.address + 0x2*cur_song.repeat_pos;
+					memcpy(new_spc + 0x140, &repeat_address, 2);
+
+					// Set BGM to load
+					const BYTE bgm = selected_bgm + 1;
+					memcpy(new_spc + 0x1F4, &bgm, 1);
+
+					// Save byte array to file
+					fwrite(new_spc, sizeof(new_spc), 1, f);
+				}
+				fclose(f);
+			}
+		}
+	}
 }
 
 BOOL save_all_packs() {
@@ -227,7 +289,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		switch (id) {
 		case ID_OPEN: {
 			char *file = open_dialog(GetOpenFileName,
-				"SNES ROM files (*.smc, *.sfc)\0*.smc;*.sfc\0All Files\0*.*\0", OFN_FILEMUSTEXIST);
+				"SNES ROM files (*.smc, *.sfc)\0*.smc;*.sfc\0All Files\0*.*\0", NULL, OFN_FILEMUSTEXIST);
 			if (file && open_rom(file, ofn.Flags & OFN_READONLY)) {
 				SendMessage(tab_hwnd[current_tab], WM_ROM_CLOSED, 0, 0);
 				SendMessage(tab_hwnd[current_tab], WM_ROM_OPENED, 0, 0);
@@ -245,6 +307,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case ID_IMPORT: import(); break;
 //		case ID_IMPORT_SPC: import_spc(); break;
 		case ID_EXPORT: export(); break;
+		case ID_EXPORT_SPC: export_spc(); break;
 		case ID_EXIT: DestroyWindow(hWnd); break;
 		case ID_OPTIONS: {
 			extern BOOL CALLBACK OptionsDlgProc(HWND,UINT,WPARAM,LPARAM);
