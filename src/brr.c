@@ -12,24 +12,34 @@ enum {
 
 struct sample samp[128];
 
-// Returns the length of a BRR sample, in bytes
+// Returns the length of a BRR sample, in bytes.
+// This makes no attempt to simulate the behavior of the SPC on key on. It ignores the header of a
+// block on key on. That would complicate decoding, because you could have a loop that results in a
+// sample that ends, or that has a second loop point, and... no one does that. Right?
 static int32_t sample_length(const uint8_t *spc_memory, uint16_t start) {
 	int32_t end = start;
 	uint8_t b;
 	do {
 		b = spc_memory[end];
 		end += BRR_BLOCK_SIZE;
-	} while ((b & BRR_FLAG_END) == 0 && end < 0x10000 - 9);
+	} while ((b & BRR_FLAG_END) == 0 && end < 0x10000 - BRR_BLOCK_SIZE);
 
-	if (end < 0x10000 - 9)
+	if (end < 0x10000 - BRR_BLOCK_SIZE)
 		return end - start;
 	else
 		return -1;
 }
 
-static void decode_brr_block(int16_t *buffer, const uint8_t *block) {
+static void decode_brr_block(int16_t *buffer, const uint8_t *block, BOOL first_block) {
 	int range = block[0] >> 4;
 	int filter = (block[0] >> 2) & 3;
+
+	if (first_block) {
+		// According to SPC_DSP, the header is ignored on key on.
+		// Not enforcing this could result in a read out of bounds, if the filter is nonzero.
+		range = 0;
+		filter = 0;
+	}
 
 	for (int i = 2; i < 18; i++) {
 		int32_t s = block[i / 2];
@@ -113,7 +123,7 @@ void decode_samples(const unsigned char *ptrtable) {
 		} else
 			sa->loop_len = 0;
 
-		size_t allocation_size = sizeof(int16_t) * (2 + sa->length + 1);
+		size_t allocation_size = sizeof(int16_t) * (sa->length + 1);
 
 		int16_t *p = malloc(allocation_size);
 		if (!p) {
@@ -123,15 +133,10 @@ void decode_samples(const unsigned char *ptrtable) {
 /*		printf("Sample %2d: %04X(%04X)-%04X length %d looplen %d\n",
 			sn, start, loop, end, sa->length, sa->loop_len);*/
 
-		// A custom sample might try to rely on past data that doesn't exist, so provide some, just
-		// to avoid a crash. (We currently just zero-initialize this. Most BRR converters out there
-		// don't struggle with this, as far as I know.)
-		p[0] = 0;
-		p[1] = 0;
-		sa->data = &p[2];
-		p = &p[2];
+		sa->data = p;
 
 		int needs_another_loop;
+		int first_block = TRUE;
 		int decoding_start = start;
 		int times = 0;
 
@@ -139,8 +144,9 @@ void decode_samples(const unsigned char *ptrtable) {
 			needs_another_loop = FALSE;
 
 			for (int pos = decoding_start; pos < end; pos += BRR_BLOCK_SIZE) {
-				decode_brr_block(p, &spc[pos]);
+				decode_brr_block(p, &spc[pos], first_block);
 				p += 16;
+				first_block = FALSE;
 			}
 
 			if (sa->loop_len != 0) {
@@ -150,7 +156,7 @@ void decode_samples(const unsigned char *ptrtable) {
 				after_loop[0] = p[-2];
 				after_loop[1] = p[-1];
 
-				decode_brr_block(&after_loop[2], &spc[loop]);
+				decode_brr_block(&after_loop[2], &spc[loop], FALSE);
 				int full_loop_len = get_full_loop_len(sa, &after_loop[2], (loop - start) / BRR_BLOCK_SIZE * 16);
 
 				if (full_loop_len == -1) {
@@ -159,16 +165,16 @@ void decode_samples(const unsigned char *ptrtable) {
 					//	sa->data[sa->length - sa->loop_len],
 					//	sa->data[sa->length - sa->loop_len + 1]);
 					ptrdiff_t diff = p - sa->data;
-					int16_t *new_stuff = realloc(sa->data - 2, (2 + sa->length + sa->loop_len + 1) * sizeof(int16_t));
+					int16_t *new_stuff = realloc(sa->data, (sa->length + sa->loop_len + 1) * sizeof(int16_t));
 					if (new_stuff == NULL) {
 						printf("realloc failed in BRR decoding (sn: %02X)\n", sn);
 						// TODO What do we do now? Replace this with something better
 						needs_another_loop = FALSE;
 						break;
 					}
-					p = (new_stuff + 2) + diff;
+					p = new_stuff + diff;
 					sa->length += sa->loop_len;
-					sa->data = new_stuff + 2;
+					sa->data = new_stuff;
 				} else {
 					sa->loop_len = full_loop_len;
 					// needs_another_loop is already false
@@ -191,10 +197,7 @@ void decode_samples(const unsigned char *ptrtable) {
 
 void free_samples(void) {
 	for (int sn = 0; sn < 128; sn++) {
-		if (samp[sn].data) {
-			// static_assert(sizeof(samp[sn].data[0]) == sizeof(int16_t));
-			free(samp[sn].data - 2);
-		}
+		free(samp[sn].data);
 		samp[sn].data = NULL;
 	}
 }
