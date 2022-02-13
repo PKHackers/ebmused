@@ -186,7 +186,7 @@ void decode_samples(const unsigned char *ptrtable) {
 			++times;
 		} while (needs_another_loop && times < 64);
 
-		if (times == 64) {
+		if (needs_another_loop) {
 			printf("Sample %02X took too many iterations to get into a cycle\n", sn);
 		}
 
