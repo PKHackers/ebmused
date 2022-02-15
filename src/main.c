@@ -184,62 +184,76 @@ static void export() {
 	fclose(f);
 }
 
+static void write_spc(FILE *f);
 static void export_spc() {
-	if (cur_song.order_length < 1) {
-		MessageBox2("No song loaded.", "Export SPC", MB_ICONEXCLAMATION);
-	} else {
+	if (cur_song.order_length > 0) {
 		char *file = open_dialog(GetSaveFileName, "SPC files (*.spc)\0*.spc\0", "spc", OFN_OVERWRITEPROMPT);
 		if (file) {
 			FILE *f = fopen(file, "wb");
-			if (!f) {
-				MessageBox2(strerror(errno), "Export SPC", MB_ICONEXCLAMATION);
-			} else {
-				HRSRC res = FindResource(hinstance, MAKEINTRESOURCE(IDRC_SPC), RT_RCDATA);
-				HGLOBAL res_handle = res ? LoadResource(NULL, res) : NULL;
-				if (!res_handle) {
-					MessageBox2("Blank SPC could not be loaded.", "Export SPC", MB_ICONEXCLAMATION);
-				} else {
-					BYTE* res_data = (BYTE*)LockResource(res_handle);
-					DWORD spc_size = SizeofResource(NULL, res);
-					const WORD header_size = 0x100;
-					const WORD footer_size = 0x100;
-
-					// Copy blank SPC to byte array
-					BYTE new_spc[spc_size];
-					memcpy(new_spc, res_data, sizeof(new_spc));
-
-					// Copy packs/blocks to byte array
-					for (int pack = 0; pack < 3; pack++) {
-						if (packs_loaded[pack] < NUM_PACKS) {
-							struct pack *p = load_pack(packs_loaded[pack]);
-							for (int block = 0; block < p->block_count; block++) {
-								struct block *b = &p->blocks[block];
-
-								// Copy block to new_spc
-								const int size = min(b->size, sizeof(new_spc) - b->spc_address - footer_size);
-								memcpy(new_spc + header_size + b->spc_address, b->data, size);
-
-								if (size > sizeof(new_spc) - footer_size) {
-									printf("SPC pack %d block %d too large.\n", packs_loaded[pack], block);
-								}
-							}
-						}
-					}
-
-					// Set pattern repeat location
-					const WORD repeat_address = cur_song.address + 0x2*cur_song.repeat_pos;
-					memcpy(new_spc + 0x140, &repeat_address, 2);
-
-					// Set BGM to load
-					const BYTE bgm = selected_bgm + 1;
-					memcpy(new_spc + 0x1F4, &bgm, 1);
-
-					// Save byte array to file
-					fwrite(new_spc, sizeof(new_spc), 1, f);
-				}
+			if (f) {
+				write_spc(f);
 				fclose(f);
+			} else {
+				MessageBox2(strerror(errno), "Export SPC", MB_ICONEXCLAMATION);
 			}
 		}
+	} else {
+		MessageBox2("No song loaded.", "Export SPC", MB_ICONEXCLAMATION);
+	}
+}
+
+// Loads pack by index and copies its contents to "spc" at the appropriate locations.
+static void pack_to_spc(BYTE pack, BYTE* spc) {
+	if (pack < NUM_PACKS) {
+		const WORD header_size = 0x100;
+
+		struct pack *p = load_pack(pack);
+		for (int block = 0; block < p->block_count; block++) {
+			struct block *b = &p->blocks[block];
+
+			if (b->size <= 0x10000 - b->spc_address) {
+				memcpy(spc + header_size + b->spc_address, b->data, b->size);
+			} else {
+				printf("SPC pack %X block %d too large.\n", pack, block);
+			}
+		}
+	}
+}
+
+static void write_spc(FILE *f) {
+	// Load blank SPC file.
+	HRSRC res = FindResource(hinstance, MAKEINTRESOURCE(IDRC_SPC), RT_RCDATA);
+	HGLOBAL res_handle = res ? LoadResource(NULL, res) : NULL;
+
+	if (res_handle) {
+		BYTE* res_data = (BYTE*)LockResource(res_handle);
+		DWORD spc_size = SizeofResource(NULL, res);
+
+		// Copy blank SPC to byte array
+		BYTE *new_spc = memcpy(malloc(spc_size), res_data, spc_size);
+
+		// Copy packs/blocks to byte array
+		for (int pack = 0; pack < 3; pack++) {
+			pack_to_spc(packs_loaded[pack], new_spc);
+		}
+
+		// Set pattern repeat location. (Not absolutely necessary...)
+		const WORD repeat_address = cur_song.address + 0x2*cur_song.repeat_pos;
+		memcpy(new_spc + 0x140, &repeat_address, 2);
+
+		// Set BGM to load
+		const BYTE bgm = selected_bgm + 1;
+		memcpy(new_spc + 0x1F4, &bgm, 1);
+
+		// Update song address of current BGM within the music program
+		memcpy(new_spc + 0x2F48 + 0x2*bgm, &cur_song.address, 2);
+
+		// Save byte array to file
+		fwrite(new_spc, spc_size, 1, f);
+
+		free(new_spc);
+	} else {
+		MessageBox2("Blank SPC could not be loaded.", "Export SPC", MB_ICONEXCLAMATION);
 	}
 }
 
