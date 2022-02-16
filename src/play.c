@@ -46,7 +46,7 @@ static void calc_vol_2(struct channel_state *c, int pan) {
 }
 
 static void make_slider(struct slider *s, int cycles, int target) {
-	s->delta = ((target << 8) - (s->cur & 0xFF00)) / cycles;
+	s->delta = cycles == 0 ? 0xFF : ((target << 8) - (s->cur & 0xFF00)) / cycles;
 	s->cycles = cycles;
 	s->target = target;
 }
@@ -196,7 +196,7 @@ static void do_command(struct song_state *st, struct channel_state *c) {
 			break;
 		case 0xF0:
 			c->vibrato_fadein = p[1];
-			c->vibrato_range_delta = c->cur_vib_range / p[1];
+			c->vibrato_range_delta = p[1] == 0 ? 0xFF : c->cur_vib_range / p[1];
 			break;
 		case 0xF1: case 0xF2:
 			c->port_type = *p & 1;
