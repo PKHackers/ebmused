@@ -484,8 +484,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	while (GetMessage(&msg, NULL, 0, 0) > 0) {
 		if (!TranslateAccelerator(hwndMain, hAccel, &msg)) {
 			TranslateMessage(&msg);
+			DispatchMessage(&msg);
 		}
-		DispatchMessage(&msg);
 	}
 	DestroyMenu(hcontextmenu);
 	return msg.wParam;
