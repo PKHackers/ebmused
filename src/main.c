@@ -130,7 +130,7 @@ err1:
 	fclose(f);
 }
 
-/*static void import_spc() {
+static void import_spc() {
 	char *file = open_dialog(GetOpenFileName,
 		"SPC Savestates (*.spc)\0*.spc\0All Files\0*.*\0",
 		NULL,
@@ -145,7 +145,7 @@ err1:
 
 	fseek(f, 0x100, SEEK_SET);
 	fread(spc, 65536, 1, f);
-	fseek(f, 0x1015D, SEEK_SET);
+	fseek(f, 0x1015D, SEEK_SET); // Sample Location (Hi-byte of mem address for the sample directory table)
 	int samp_ptrs = fgetc(f) << 8;
 	decode_samples((WORD *)&spc[samp_ptrs]);
 	for (int i = 0; i < 0xfff0; i++) {
@@ -155,14 +155,18 @@ err1:
 			break;
 		}
 	}
-	int song_addr = spc[0x40] | spc[0x41] << 8;
+
+	BYTE bgm_index = spc[0xF4];
+	WORD music_addr = *(WORD *)&spc[0x2E48 + 0x2*bgm_index];
+	printf("bgm index: 0x%X\n", bgm_index);
+	printf("music address: 0x%X\n", music_addr);
 	free_song(&cur_song);
-	decompile_song(&cur_song, song_addr - 2, 0xffff);
+	decompile_song(&cur_song, music_addr, 0xffff);
 	initialize_state();
 	SendMessage(tab_hwnd[current_tab], WM_SONG_IMPORTED, 0, 0);
 
 	fclose(f);
-}*/
+}
 
 static void export() {
 	struct block *b = save_cur_song_to_pack();
@@ -248,6 +252,9 @@ static void write_spc(FILE *f) {
 		// Update song address of current BGM within the music program
 		memcpy(new_spc + 0x2F48 + 0x2*bgm, &cur_song.address, 2);
 
+		// Update sample address high byte (Not necessary since it's in the template SPC...)
+		memset(new_spc + 0x1015D, 0x6C, 1);
+
 		// Save byte array to file
 		fwrite(new_spc, spc_size, 1, f);
 
@@ -319,7 +326,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			SetWindowText(hWnd, "EarthBound Music Editor");
 			break;
 		case ID_IMPORT: import(); break;
-//		case ID_IMPORT_SPC: import_spc(); break;
+		case ID_IMPORT_SPC: import_spc(); break;
 		case ID_EXPORT: export(); break;
 		case ID_EXPORT_SPC: export_spc(); break;
 		case ID_EXIT: DestroyWindow(hWnd); break;
