@@ -13,22 +13,22 @@ enum {
 
 struct sample samp[128];
 
-// Returns the length of a BRR sample, in bytes.
+// Counts and returns the number of BRR blocks from a specific location in memory.
 // This makes no attempt to simulate the behavior of the SPC on key on. It ignores the header of a
 // block on key on. That would complicate decoding, because you could have a loop that results in a
 // sample that ends, or that has a second loop point, and... no one does that. Right?
-static int32_t sample_length(const uint8_t *spc_memory, uint16_t start) {
-	int32_t end = start;
-	uint8_t b;
-	do {
-		b = spc_memory[end];
-		end += BRR_BLOCK_SIZE;
-	} while ((b & BRR_FLAG_END) == 0 && end < 0x10000 - BRR_BLOCK_SIZE);
+// The count should never be greater than 7281 since that would take more memory than the SPC has.
+static unsigned int count_brr_blocks(const uint8_t *spc_memory, uint16_t start) {
+	unsigned int count = 0;
+	uint8_t b = 0;
+	// Count blocks until one has the end flag or there's not enough space for another in RAM.
+	while (!(b & BRR_FLAG_END) && (count + 1) * BRR_BLOCK_SIZE <= 0xFFFF) {
+		b = spc_memory[start + count*BRR_BLOCK_SIZE];
+		count++;
+	}
 
-	if (end < 0x10000 - BRR_BLOCK_SIZE)
-		return end - start;
-	else
-		return -1;
+	// Should we return 0 if we reached the end of RAM and the last block doesn't have the end flag?
+	return count;
 }
 
 static void decode_brr_block(int16_t *buffer, const uint8_t *block, BOOL first_block) {
@@ -102,23 +102,22 @@ static int get_full_loop_len(const struct sample *sa, const int16_t *next_block,
 void decode_samples(const unsigned char *ptrtable) {
 	for (unsigned sn = 0; sn < 128; sn++) {
 		struct sample *sa = &samp[sn];
-		int start = ptrtable[0] | (ptrtable[1] << 8);
-		int loop  = ptrtable[2] | (ptrtable[3] << 8);
-		ptrtable += 4;
+		uint16_t start = ptrtable[0] | (ptrtable[1] << 8);
+		uint16_t loop  = ptrtable[2] | (ptrtable[3] << 8);
 
 		sa->data = NULL;
 		if (start == 0 || start == 0xffff)
 			continue;
 
-		int length = sample_length(spc, start);
-		if (length == -1)
+		unsigned int num_blocks = count_brr_blocks(spc, start);
+		if (num_blocks == 0)
 			continue;
 
-		int end = start + length;
-		sa->length = (length / BRR_BLOCK_SIZE) * 16;
+		uint16_t end = start + num_blocks * BRR_BLOCK_SIZE;
+		sa->length = num_blocks * 16;
 		// The LOOP bit only matters for the last brr block
-		if (spc[start + length - BRR_BLOCK_SIZE] & BRR_FLAG_LOOP) {
-			if (loop < start || loop >= end)
+		if (spc[start + (num_blocks - 1) * BRR_BLOCK_SIZE] & BRR_FLAG_LOOP) {
+			if (loop < start || loop >= end || (loop - start) % BRR_BLOCK_SIZE)
 				continue;
 			sa->loop_len = ((end - loop) / BRR_BLOCK_SIZE) * 16;
 		} else
@@ -131,27 +130,25 @@ void decode_samples(const unsigned char *ptrtable) {
 			printf("malloc failed in BRR decoding (sn: %02X)\n", sn);
 			continue;
 		}
-/*		printf("Sample %2d: %04X(%04X)-%04X length %d looplen %d\n",
-			sn, start, loop, end, sa->length, sa->loop_len);*/
 
 		sa->data = p;
 
 		int needs_another_loop;
 		int first_block = TRUE;
-		int decoding_start = start;
+		int decoding_start = 0; // Index of BRR where decoding begins.
 		int times = 0;
 
 		do {
 			needs_another_loop = FALSE;
 
-			for (int pos = decoding_start; pos < end; pos += BRR_BLOCK_SIZE) {
-				decode_brr_block(p, &spc[pos], first_block);
+			for (int i = decoding_start; i < num_blocks; i++) {
+				decode_brr_block(p, &spc[start + i*BRR_BLOCK_SIZE], first_block);
 				p += 16;
 				first_block = FALSE;
 			}
 
 			if (sa->loop_len != 0) {
-				decoding_start = loop;
+				decoding_start = (loop - start) / BRR_BLOCK_SIZE; // Start decoding from "loop" BRR.
 
 				int16_t after_loop[18];
 				after_loop[0] = p[-2];
@@ -162,9 +159,6 @@ void decode_samples(const unsigned char *ptrtable) {
 
 				if (full_loop_len == -1) {
 					needs_another_loop = TRUE;
-					//printf("We need another loop! sample %02X (old loop start samples: %d %d)\n", (unsigned)sn,
-					//	sa->data[sa->length - sa->loop_len],
-					//	sa->data[sa->length - sa->loop_len + 1]);
 					ptrdiff_t diff = p - sa->data;
 					int16_t *new_stuff = realloc(sa->data, (sa->length + sa->loop_len + 1) * sizeof(int16_t));
 					if (new_stuff == NULL) {
