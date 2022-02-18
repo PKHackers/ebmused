@@ -22,7 +22,7 @@ static unsigned int count_brr_blocks(const uint8_t *spc_memory, uint16_t start) 
 	unsigned int count = 0;
 	uint8_t b = 0;
 	// Count blocks until one has the end flag or there's not enough space for another in RAM.
-	while (!(b & BRR_FLAG_END) && (count + 1) * BRR_BLOCK_SIZE <= 0xFFFF) {
+	while (!(b & BRR_FLAG_END) && start + (count + 1) * BRR_BLOCK_SIZE <= 0xFFFF) {
 		b = spc_memory[start + count*BRR_BLOCK_SIZE];
 		count++;
 	}
@@ -104,6 +104,7 @@ void decode_samples(const unsigned char *ptrtable) {
 		struct sample *sa = &samp[sn];
 		uint16_t start = ptrtable[0] | (ptrtable[1] << 8);
 		uint16_t loop  = ptrtable[2] | (ptrtable[3] << 8);
+		ptrtable += 4;
 
 		sa->data = NULL;
 		if (start == 0 || start == 0xffff)
@@ -148,7 +149,7 @@ void decode_samples(const unsigned char *ptrtable) {
 			}
 
 			if (sa->loop_len != 0) {
-				decoding_start = (loop - start) / BRR_BLOCK_SIZE; // Start decoding from "loop" BRR.
+				decoding_start = (loop - start) / BRR_BLOCK_SIZE; // Start decoding from "loop" BRR block.
 
 				int16_t after_loop[18];
 				after_loop[0] = p[-2];
