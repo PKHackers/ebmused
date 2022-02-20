@@ -21,7 +21,7 @@ struct sample samp[128];
 static unsigned int count_brr_blocks(const uint8_t *spc_memory, uint16_t start) {
 	unsigned int count = 0;
 	uint8_t b = 0;
-	// Count blocks until one has the end flag or there's not enough space for another in RAM.
+	// Count blocks until one has the end flag or there's not enough space for another to be in RAM.
 	while (!(b & BRR_FLAG_END) && start + (count + 1) * BRR_BLOCK_SIZE <= 0xFFFF) {
 		b = spc_memory[start + count*BRR_BLOCK_SIZE];
 		count++;
