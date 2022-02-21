@@ -134,6 +134,8 @@ struct spcDetails {
 	WORD music_table_addr;
 	WORD instrument_table_addr;
 	WORD sample_dir_addr;
+	WORD music_addr;
+	BYTE music_index;
 };
 
 BOOL try_parse_music_table(const BYTE *spc, struct spcDetails *out_details) {
@@ -164,6 +166,58 @@ BOOL try_parse_music_table(const BYTE *spc, struct spcDetails *out_details) {
 	return TRUE;
 }
 
+BOOL try_parse_music_address(const BYTE* spc, struct spcDetails *out_details) {
+	WORD loop_addr = *(WORD *)&spc[0x40];
+	WORD *terminator = (WORD *)&spc[loop_addr];
+	while (terminator[0]) terminator++;
+
+	// sanity check (abitrarily limit pattern count to 256)
+	if (terminator - (WORD *)&spc[loop_addr] > 0x200) return FALSE;
+
+	// Find all unique patterns.
+	typedef WORD PATTERN[8];
+	PATTERN *patterns = (PATTERN*)&terminator[1];
+	unsigned int numPatterns = 0;
+	// Pattern is only valid if all channel addresses are ordered. (Ignore 0x0000 channel addresses)
+	for (unsigned int i = 0;
+		i < 0xFF // Arbitrary limit count to 255
+			&& (patterns[i][0] < patterns[i][1] || !patterns[i][1])
+			&& (patterns[i][1] < patterns[i][2] || !patterns[i][2])
+			&& (patterns[i][2] < patterns[i][3] || !patterns[i][3])
+			&& (patterns[i][3] < patterns[i][4] || !patterns[i][4])
+			&& (patterns[i][4] < patterns[i][5] || !patterns[i][5])
+			&& (patterns[i][5] < patterns[i][6] || !patterns[i][6])
+			&& (patterns[i][6] < patterns[i][7] || !patterns[i][7])
+			;
+		i++) {
+		numPatterns = i + 1;
+	}
+
+	// sanity check. Assert smallest pattern is greater than 0xFF and number of patterns is not greater than 255 (arbitrary number)
+	if (patterns[0][0] <= 0xFF || numPatterns >= 0xFF) return FALSE;
+
+	// Find the first pattern by iterating backwards until one pattern doesn't point at a pattern address.
+	WORD *music_addr_ptr = (WORD*)&spc[loop_addr];
+	BOOL patternExists = TRUE;
+	for (WORD* prev = &music_addr_ptr[-1]; prev && patternExists; prev--) {
+		patternExists = FALSE;
+		// if any patterns contain prev, continue
+		for (unsigned int i = 0; i < numPatterns; i++) {
+			if (patterns[i] == (WORD*)&spc[*prev]) {
+				patternExists = TRUE;
+				music_addr_ptr = prev;
+				break;
+			}
+		}
+	}
+
+	// sanity check
+	if ((BYTE*)music_addr_ptr - spc <= 0xFF) return FALSE;
+
+	out_details->music_addr = (BYTE*)music_addr_ptr - spc;
+	return TRUE;
+}
+
 BOOL try_parse_inst_directory(const BYTE *spc, struct spcDetails *out_details) {
 	if (memcmp(spc, "\xCF\xDA\x14\x60\x98", 5) == 0 && memcmp(&spc[6], "\x14\x98", 2) == 0 && spc[9] == 0x15) {
 		out_details->instrument_table_addr = spc[5] | (spc[8] << 8);
@@ -184,25 +238,62 @@ BOOL try_parse_sample_directory(const BYTE *spc, struct spcDetails *out_details)
 
 enum SPC_RESULTS {
 	HAS_MUSIC = 1 << 0,
-	HAS_INSTRUMENTS = 1 << 1,
-	HAS_SAMPLES = 1 << 2
+	HAS_MUSIC_TABLE = 1 << 1,
+	HAS_INSTRUMENTS = 1 << 2,
+	HAS_SAMPLES = 1 << 3
 };
 
 enum SPC_RESULTS try_parse_spc(const BYTE* spc, struct spcDetails *out_details) {
 	BOOL foundMusic = FALSE,
+		foundMusicTable = FALSE,
 		foundInst = FALSE,
 		foundSample = FALSE;
 	// For i in 0 .. 0xFF00, and also stop if all 3 things we're looking for have been found
-	for (int i = 0; i < 0xFF00 && !(foundMusic && foundInst && foundSample); i++) {
-		if (!foundMusic && spc[i] == 0x1C)
-			foundMusic = try_parse_music_table(&spc[i], out_details);
+	for (int i = 0; i < 0xFF00 && !(foundMusicTable && foundInst && foundSample); i++) {
+		if (!foundMusicTable && spc[i] == 0x1C)
+			foundMusicTable = try_parse_music_table(&spc[i], out_details);
 		else if (!foundInst && spc[i] == 0xCF)
 			foundInst = try_parse_inst_directory(&spc[i], out_details);
 		else if (!foundSample && spc[i] == 0xE8)
 			foundSample = try_parse_sample_directory(&spc[i], out_details);
 	}
 
+	foundMusic = try_parse_music_address(spc, out_details);
+
+	// If we couldn't find the music via snooping the $40 address, try checking if we found a music table.
+	if (!foundMusic && foundMusicTable) {
+		// Try to get the bgm index from one of these locations, the first that isn't 0...
+		BYTE bgm_index = spc[0x00] ? spc[0x00]
+			: spc[0x04] ? spc[0x04]
+			: spc[0x08] ? spc[0x08]
+			: spc[0xF3] ? spc[0xF3]
+			: spc[0xF4];
+		if (bgm_index) {
+			out_details->music_index = bgm_index;
+			out_details->music_addr = ((WORD *)&spc[out_details->music_table_addr])[bgm_index];
+			foundMusic = TRUE;
+		} else {
+			// If we couldn't find the bgm index, try to guess it from the table using the pointer at 0x40
+			WORD music_addr = *((WORD*)&spc[0x40]);
+			WORD closestDiff = 0xFFFF;
+			for (unsigned int i = 0; i < 0xFF; i++) {
+				WORD addr = ((WORD *)&spc[out_details->music_table_addr])[i];
+				if (music_addr < addr && addr - music_addr < closestDiff) {
+					closestDiff = addr - music_addr;
+					bgm_index = i;
+				}
+			}
+
+			if (music_addr > 0xFF) {
+				out_details->music_addr = music_addr;
+				out_details->music_index = 0;
+				foundMusic = TRUE;
+			}
+		}
+	}
+
 	enum SPC_RESULTS results = 0;
+	if (foundMusicTable) results |= HAS_MUSIC_TABLE;
 	if (foundMusic) results |= HAS_MUSIC;
 	if (foundInst) results |= HAS_INSTRUMENTS;
 	if (foundSample) results |= HAS_SAMPLES;
@@ -229,45 +320,20 @@ static void import_spc() {
 	enum SPC_RESULTS results = try_parse_spc(spc, &details);
 	if (results) {
 		if (results & HAS_SAMPLES) {
-			printf("Sample table found: 0x%X\n", details.sample_dir_addr);
+			printf("Sample table found: %#X\n", details.sample_dir_addr);
 			decode_samples(&spc[details.sample_dir_addr]);
 		}
 		if (results & HAS_INSTRUMENTS) {
+			printf("Instrument table found: %#X\n", inst_base);
 			inst_base = details.instrument_table_addr;
-			printf("Instrument table found: 0x%X\n", inst_base);
 		}
 		if (results & HAS_MUSIC) {
-			printf("Music table found: 0x%X\n", details.music_table_addr);
+			printf("Music table found: %#X\n", details.music_table_addr);
+			printf("Music index found: %#X\n", details.music_index);
+			printf("Music found: %#X\n", details.music_addr);
 
-			// Try to get the bgm index from one of these locations, the first that isn't 0...
-			BYTE bgm_index = spc[0x00] ? spc[0x00]
-				: spc[0x04] ? spc[0x04]
-				: spc[0x08] ? spc[0x08]
-				: spc[0xF3] ? spc[0xF3]
-				: spc[0xF4];
-			WORD music_addr;
-			if (bgm_index) {
-				music_addr = ((WORD *)&spc[details.music_table_addr])[bgm_index];
-			} else {
-				// If we couldn't find the bgm index, try to guess it from the pointer at 0x40
-				music_addr = *((WORD*)&spc[0x40]);
-				WORD closestDiff = 0xFFFF;
-				for (unsigned int i = 0; i < 0xFF; i++) {
-					WORD addr = ((WORD *)&spc[details.music_table_addr])[i];
-					if (music_addr < addr && addr - music_addr < closestDiff) {
-						closestDiff = addr - music_addr;
-						bgm_index = i;
-					}
-				}
-			}
-
-			if (bgm_index) {
-				printf("bgm index: 0x%X\n", bgm_index);
-				printf("music address: 0x%X\n", music_addr);
-
-				free_song(&cur_song);
-				decompile_song(&cur_song, ((WORD *)&spc[details.music_table_addr])[bgm_index], 0xffff);
-			}
+			free_song(&cur_song);
+			decompile_song(&cur_song, details.music_addr, 0xffff);
 		}
 
 		initialize_state();
