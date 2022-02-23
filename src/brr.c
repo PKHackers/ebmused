@@ -4,21 +4,22 @@
 #include <stdlib.h>
 #include "ebmusv2.h"
 
-enum {
-	BRR_BLOCK_SIZE = 9,
+const unsigned int BRR_BLOCK_SIZE = 9;
 
+enum {
 	BRR_FLAG_END = 1,
 	BRR_FLAG_LOOP = 2
 };
 
 struct sample samp[128];
+WORD *brr_table = NULL;
 
 // Counts and returns the number of BRR blocks from a specific location in memory.
 // This makes no attempt to simulate the behavior of the SPC on key on. It ignores the header of a
 // block on key on. That would complicate decoding, because you could have a loop that results in a
 // sample that ends, or that has a second loop point, and... no one does that. Right?
 // The count should never be greater than 7281 since that would take more memory than the SPC has.
-static unsigned int count_brr_blocks(const uint8_t *spc_memory, uint16_t start) {
+unsigned int count_brr_blocks(const uint8_t *spc_memory, uint16_t start) {
 	unsigned int count = 0;
 	uint8_t b = 0;
 	// Count blocks until one has the end flag or there's not enough space for another to be in RAM.
@@ -100,6 +101,7 @@ static int get_full_loop_len(const struct sample *sa, const int16_t *next_block,
 }
 
 void decode_samples(const unsigned char *ptrtable) {
+	brr_table = (WORD *)ptrtable;
 	for (unsigned sn = 0; sn < 128; sn++) {
 		struct sample *sa = &samp[sn];
 		uint16_t start = ptrtable[0] | (ptrtable[1] << 8);
