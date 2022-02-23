@@ -304,7 +304,8 @@ static void import_spc() {
 	BYTE dsp[0x80];
 	fread(dsp, 0x80, 1, f);
 
-	decode_samples(&spc[dsp[0x5D] << 8]);
+	sample_ptr_base = dsp[0x5D] << 8;
+	decode_samples(&spc[sample_ptr_base]);
 
 	struct spcDetails details;
 	enum SPC_RESULTS results = try_parse_spc(spc, &details);
@@ -408,7 +409,7 @@ static void write_spc(FILE *f) {
 		// compile_song corrupts the spc and any potential samples/instruments, so we need to make a copy first...
 		BYTE spc_copy[0x10000];
 		memcpy(spc_copy, spc, 0x10000);
-		WORD *brr_copy = (WORD *)&spc_copy[(BYTE*)brr_table - spc];
+		WORD *brr_copy = (WORD *)&spc_copy[sample_ptr_base];
 
 		// Move the music from wherever it was in the spc to 0x3200... (ripping out part of the program block in the process...)
 		const WORD dstMusic = 0x3200;
@@ -432,22 +433,24 @@ static void write_spc(FILE *f) {
 		memcpy(spc, spc_copy, 0x10000);
 
 		// Copy sample pointers...
-		memcpy(new_spc + 0x100 + dstSamplePointers, brr_copy, inst_size);
-		// Copy sample data...
+//		memcpy(new_spc + 0x100 + dstSamplePointers, brr_copy, inst_size*2);
+		// Copy sample data and pointers...
 		// Remap sample data to new locations to repack them
 		struct SampleMap {
-			WORD src, dst;
+			WORD src, len, dst;
 		} sampleMap [NUM_INSTRUMENTS];
 		WORD offset = 0;
 		for (unsigned int i = 0; i < NUM_INSTRUMENTS && brr_copy[i] < 0xFF00 && brr_copy[i] > 0xFF; i++)
 		{
-			const WORD src_addr = brr_copy[i];
+			const WORD src_addr = brr_copy[2*i];
+			WORD len = brr_copy[2*i + 1] - src_addr;
 			WORD dst_addr = 0;
 
 			// Find if we've already stored this sample somewhere
 			for (unsigned int j = 0; j < i; j++) {
-				if (sampleMap[j].src == src_addr) {
+				if (sampleMap[j].src == src_addr && sampleMap[j].len == len) {
 					dst_addr = sampleMap[j].dst;
+					len = sampleMap[j].len;
 					break;
 				}
 			}
@@ -468,8 +471,11 @@ static void write_spc(FILE *f) {
 
 			sampleMap[i].src = src_addr;
 			sampleMap[i].dst = dst_addr;
+			sampleMap[i].len = len;
 			printf("Remapping sample pointer %d: from 0x%x to 0x%x\n", i, src_addr, dst_addr);
-			memcpy(new_spc + 0x100 + dstSamplePointers + 0x2*i, &dst_addr, 2);
+			memcpy(new_spc + 0x100 + dstSamplePointers + 0x4*i, &dst_addr, 2);
+			WORD loop_addr = dst_addr + len;
+			memcpy(new_spc + 0x100 + dstSamplePointers + 0x4*i + 0x2, &loop_addr, 2);
 		}
 
 		// Copy instrument data...

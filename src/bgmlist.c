@@ -118,7 +118,8 @@ void load_instruments() {
 			fread(&spc[addr], size, 1, rom);
 		}
 	}
-	decode_samples(&spc[0x6C00]);
+	sample_ptr_base = 0x6C00;
+	decode_samples(&spc[sample_ptr_base]);
 	inst_base = 0x6E00;
 	if (samp[0].data == NULL)
 		song_playing = FALSE;

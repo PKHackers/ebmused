@@ -12,7 +12,7 @@ enum {
 };
 
 struct sample samp[128];
-WORD *brr_table = NULL;
+WORD sample_ptr_base = 0x6C00;
 
 // Counts and returns the number of BRR blocks from a specific location in memory.
 // This makes no attempt to simulate the behavior of the SPC on key on. It ignores the header of a
@@ -101,7 +101,6 @@ static int get_full_loop_len(const struct sample *sa, const int16_t *next_block,
 }
 
 void decode_samples(const unsigned char *ptrtable) {
-	brr_table = (WORD *)ptrtable;
 	for (unsigned sn = 0; sn < 128; sn++) {
 		struct sample *sa = &samp[sn];
 		uint16_t start = ptrtable[0] | (ptrtable[1] << 8);

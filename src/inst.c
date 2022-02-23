@@ -201,7 +201,7 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 
 		for (int i = 0; i < 128; i++) { //filling out the Sample Directory ListBox
 			if (samp[i].data == NULL) continue;
-			WORD *ptr = &brr_table[2*i];
+			WORD *ptr = (WORD *)&spc[sample_ptr_base + 4*i];
 			sprintf(buf, "%02X: %04X %04X %4d", i,
 				ptr[0], ptr[1], samp[i].length >> 4);
 			SendMessage(samplist, LB_ADDSTRING, 0, (LPARAM)buf);
