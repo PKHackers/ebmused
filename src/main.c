@@ -383,7 +383,7 @@ static void pack_to_spc(BYTE pack, BYTE* spc) {
 			if (b->size <= 0x10000 - b->spc_address) {
 				memcpy(spc + header_size + b->spc_address, b->data, b->size);
 			} else {
-				printf("SPC pack %X block %d too large.\n", pack, block);
+				printf("SPC pack 0x%x block %d too large.\n", pack, block);
 			}
 		}
 	}
@@ -409,41 +409,49 @@ static void write_spc(FILE *f) {
 		// compile_song corrupts the spc and any potential samples/instruments, so we need to make a copy first...
 		BYTE spc_copy[0x10000];
 		memcpy(spc_copy, spc, 0x10000);
-		WORD *brr_copy = (WORD *)&spc_copy[sample_ptr_base];
+		struct SamplePointers { WORD start, loop; } *sample_pointers = (struct SamplePointers *)&spc_copy[sample_ptr_base];
 
 		// Move the music from wherever it was in the spc to 0x3200... (ripping out part of the program block in the process...)
 		const WORD dstMusic = 0x3200;
-		int size = compile_song(&cur_song);
-		memcpy(spc + dstMusic, &spc[cur_song.address], size);
+		const int music_size = compile_song(&cur_song);
+		memcpy(spc + dstMusic, &spc[cur_song.address], music_size);
 
 		// recompile so the addresses are correct...
 		cur_song.address = dstMusic;
 		compile_song(&cur_song);
 
-		const unsigned int NUM_INSTRUMENTS = 128;
-		const WORD dstSamplePointers = dstMusic + 0x100 + (size & 0xFF00);
-		const WORD dstInstruments = dstSamplePointers + 0x2*NUM_INSTRUMENTS;
+		const unsigned int NUM_INSTRUMENTS = 80;
 		const WORD inst_size = NUM_INSTRUMENTS*6;
-		const WORD dstSamples = dstInstruments + inst_size;
+		// Calculate buffer needed for sample pointer table to round to nearest 0x100.
+		const WORD REMAINDER = 0x100 - ((dstMusic + music_size) & 0xFF);
+		const WORD dstSamplePointers = dstMusic + music_size + REMAINDER;
+		const WORD BUFFER = 0x10; // Generic buffer between data...
+		const WORD dstInstruments = dstSamplePointers + BUFFER + 0x2*NUM_INSTRUMENTS;
+		const WORD dstSamples = dstInstruments + BUFFER + inst_size;
+
+		// Blank out some space (for the buffer spaces)
+		memset(new_spc + 0x100 + dstMusic, 0, dstSamples - dstMusic);
 
 		// Copy music data...
-		memcpy(new_spc + 0x100 + dstMusic, &spc[cur_song.address], size);
-
-		// Use the copy we made to restore the working spc to before compile_song borked it with the dst address...
+		printf("Packing music data to $%x\n", cur_song.address);
+		memcpy(new_spc + 0x100 + dstMusic, &spc[cur_song.address], music_size);
+		// Use the copy we made to restore the working spc to before compile_song borked it with the dstMusic address...
 		memcpy(spc, spc_copy, 0x10000);
 
-		// Copy sample pointers...
-//		memcpy(new_spc + 0x100 + dstSamplePointers, brr_copy, inst_size*2);
+		// Copy instrument data...
+		printf("Packing instrument table to $%x\n", dstInstruments);
+		memcpy(new_spc + 0x100 + dstInstruments, &spc_copy[inst_base], inst_size);
+
 		// Copy sample data and pointers...
 		// Remap sample data to new locations to repack them
-		struct SampleMap {
+		struct {
 			WORD src, len, dst;
 		} sampleMap [NUM_INSTRUMENTS];
 		WORD offset = 0;
-		for (unsigned int i = 0; i < NUM_INSTRUMENTS && brr_copy[i] < 0xFF00 && brr_copy[i] > 0xFF; i++)
+		for (unsigned int i = 0; i < NUM_INSTRUMENTS && sample_pointers[i].start < 0xFF00 && sample_pointers[i].start > 0xFF; i++)
 		{
-			const WORD src_addr = brr_copy[2*i];
-			WORD len = brr_copy[2*i + 1] - src_addr;
+			const WORD src_addr = sample_pointers[i].start;
+			WORD len = sample_pointers[i].loop - sample_pointers[i].start;
 			WORD dst_addr = 0;
 
 			// Find if we've already stored this sample somewhere
@@ -458,28 +466,27 @@ static void write_spc(FILE *f) {
 			// If we haven't, add it
 			if (!dst_addr) {
 				unsigned int num_brr_blocks = count_brr_blocks(spc_copy, src_addr);
-				if (offset < 0xFFFF - dstSamples - num_brr_blocks * BRR_BLOCK_SIZE) {
+				if (num_brr_blocks == 0) {
+					printf("Invalid BRR block. Instrument: %d BRR source: $%x\n", i, src_addr);
+				} else if (offset < 0xFFFF - dstSamples - num_brr_blocks * BRR_BLOCK_SIZE) {
 					dst_addr = dstSamples + offset;
+					printf("Packing sample #%d: $%x size: 0x%x\n", i, dst_addr, num_brr_blocks * BRR_BLOCK_SIZE);
 					memcpy(new_spc + 0x100 + dst_addr, &spc_copy[src_addr], num_brr_blocks * BRR_BLOCK_SIZE);
 
 					offset += num_brr_blocks * BRR_BLOCK_SIZE;
-					printf("Packed #%d from 0x%x to 0x%x\n", i, dst_addr, dstSamples + offset - 1);
 				} else {
-					printf("Sample #%d is too big. (Destination address: 0x%x, size: 0x%x)\n", i, dstSamples + offset, num_brr_blocks * BRR_BLOCK_SIZE);
+					printf("Sample #%d is too big. (Destination: $%x, size: 0x%x) Skipped...\n", i, dstSamples + offset, num_brr_blocks * BRR_BLOCK_SIZE);
 				}
 			}
 
 			sampleMap[i].src = src_addr;
 			sampleMap[i].dst = dst_addr;
 			sampleMap[i].len = len;
-			printf("Remapping sample pointer %d: from 0x%x to 0x%x\n", i, src_addr, dst_addr);
-			memcpy(new_spc + 0x100 + dstSamplePointers + 0x4*i, &dst_addr, 2);
 			WORD loop_addr = dst_addr + len;
+			printf("Packing sample pointer %d to $%x: %x %x\n", i, dstSamplePointers +0x4*i, dst_addr, loop_addr);
+			memcpy(new_spc + 0x100 + dstSamplePointers + 0x4*i, &dst_addr, 2);
 			memcpy(new_spc + 0x100 + dstSamplePointers + 0x4*i + 0x2, &loop_addr, 2);
 		}
-
-		// Copy instrument data...
-		memcpy(new_spc + 0x100 + dstInstruments, &spc_copy[inst_base], inst_size);
 
 		// We're done copying the important stuff, now we just need to adjust some pointers in the music program.
 		{
@@ -508,7 +515,7 @@ static void write_spc(FILE *f) {
 
 		free(new_spc);
 	} else {
-		MessageBox2("Blank SPC could not be loaded", "Export SPC", MB_ICONEXCLAMATION);
+		MessageBox2("Template SPC could not be loaded", "Export SPC", MB_ICONEXCLAMATION);
 	}
 }
 

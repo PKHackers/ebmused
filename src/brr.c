@@ -28,8 +28,8 @@ unsigned int count_brr_blocks(const uint8_t *spc_memory, uint16_t start) {
 		count++;
 	}
 
-	// Should we return 0 if we reached the end of RAM and the last block doesn't have the end flag?
-	return count;
+	// Return 0 if we reached the end of RAM and the last block doesn't have the end flag
+	return !(b & BRR_FLAG_END) ? 0 : count;
 }
 
 static void decode_brr_block(int16_t *buffer, const uint8_t *block, BOOL first_block) {
