@@ -48,37 +48,34 @@ static const BYTE rom_menu_cmds[] = {
 };
 
 BOOL close_rom() {
-	if (rom) {
-		save_cur_song_to_pack();
-		int unsaved_packs = 0;
-		for (int i = 0; i < NUM_PACKS; i++)
-			if (inmem_packs[i].status & IPACK_CHANGED)
-				unsaved_packs++;
-		if (unsaved_packs) {
+	if (!rom) return TRUE;
 
-			char buf[70];
-			if (unsaved_packs == 1)
-				sprintf(buf, "A pack has unsaved changes.\nDo you want to save?");
-			else
-				sprintf(buf, "%d packs have unsaved changes.\nDo you want to save?", unsaved_packs);
+	save_cur_song_to_pack();
+	int unsaved_packs = 0;
+	for (int i = 0; i < NUM_PACKS; i++)
+		if (inmem_packs[i].status & IPACK_CHANGED)
+			unsaved_packs++;
+	if (unsaved_packs) {
 
-			int action = MessageBox2(buf, "Close", MB_ICONEXCLAMATION | MB_YESNOCANCEL);
-			if (action == IDCANCEL || (action == IDYES && !save_all_packs()))
-				return FALSE;
-		}
-		save_metadata();
+		char buf[70];
+		if (unsaved_packs == 1)
+			sprintf(buf, "A pack has unsaved changes.\nDo you want to save?");
+		else
+			sprintf(buf, "%d packs have unsaved changes.\nDo you want to save?", unsaved_packs);
 
-		fclose(rom);
-		rom = NULL;
-		free(rom_filename);
-		rom_filename = NULL;
+		int action = MessageBox2(buf, "Close", MB_ICONEXCLAMATION | MB_YESNOCANCEL);
+		if (action == IDCANCEL || (action == IDYES && !save_all_packs()))
+			return FALSE;
 	}
+	save_metadata();
+
+	fclose(rom);
+	rom = NULL;
+	free(rom_filename);
+	rom_filename = NULL;
 	enable_menu_items(rom_menu_cmds, MF_GRAYED);
 	free(areas);
 	free_metadata();
-	free_samples();
-	free_song(&cur_song);
-	song_playing = FALSE;
 	initialize_state();
 	for (int i = 0; i < NUM_PACKS; i++) {
 		free(rom_packs[i].blocks);
@@ -99,6 +96,11 @@ BOOL open_rom(char *filename, BOOL readonly) {
 
 	if (!close_rom())
 		return FALSE;
+
+	// In case an SPC is loaded/playing, clear these now.
+	free_samples();
+	free_song(&cur_song);
+	song_playing = FALSE;
 
 	rom_size = _filelength(_fileno(f));
 	rom_offset = rom_size & 0x200;
