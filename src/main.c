@@ -305,6 +305,7 @@ static void import_spc() {
 	fread(dsp, 0x80, 1, f);
 
 	sample_ptr_base = dsp[0x5D] << 8;
+	free_samples();
 	decode_samples(&spc[sample_ptr_base]);
 
 	struct spcDetails details;
