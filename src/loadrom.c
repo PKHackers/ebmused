@@ -48,31 +48,31 @@ static const BYTE rom_menu_cmds[] = {
 };
 
 BOOL close_rom() {
-	if (!rom) return TRUE;
+	if (rom) {
+		save_cur_song_to_pack();
+		int unsaved_packs = 0;
+		for (int i = 0; i < NUM_PACKS; i++)
+			if (inmem_packs[i].status & IPACK_CHANGED)
+				unsaved_packs++;
+		if (unsaved_packs) {
 
-	save_cur_song_to_pack();
-	int unsaved_packs = 0;
-	for (int i = 0; i < NUM_PACKS; i++)
-		if (inmem_packs[i].status & IPACK_CHANGED)
-			unsaved_packs++;
-	if (unsaved_packs) {
+			char buf[70];
+			if (unsaved_packs == 1)
+				sprintf(buf, "A pack has unsaved changes.\nDo you want to save?");
+			else
+				sprintf(buf, "%d packs have unsaved changes.\nDo you want to save?", unsaved_packs);
 
-		char buf[70];
-		if (unsaved_packs == 1)
-			sprintf(buf, "A pack has unsaved changes.\nDo you want to save?");
-		else
-			sprintf(buf, "%d packs have unsaved changes.\nDo you want to save?", unsaved_packs);
+			int action = MessageBox2(buf, "Close", MB_ICONEXCLAMATION | MB_YESNOCANCEL);
+			if (action == IDCANCEL || (action == IDYES && !save_all_packs()))
+				return FALSE;
+		}
+		save_metadata();
 
-		int action = MessageBox2(buf, "Close", MB_ICONEXCLAMATION | MB_YESNOCANCEL);
-		if (action == IDCANCEL || (action == IDYES && !save_all_packs()))
-			return FALSE;
+		fclose(rom);
+		rom = NULL;
+		free(rom_filename);
+		rom_filename = NULL;
 	}
-	save_metadata();
-
-	fclose(rom);
-	rom = NULL;
-	free(rom_filename);
-	rom_filename = NULL;
 	enable_menu_items(rom_menu_cmds, MF_GRAYED);
 	free(areas);
 	free_metadata();
