@@ -4,11 +4,10 @@
 #include <stdlib.h>
 #include "ebmusv2.h"
 
-const unsigned int BRR_BLOCK_SIZE = 9;
-
 enum {
 	BRR_FLAG_END = 1,
-	BRR_FLAG_LOOP = 2
+	BRR_FLAG_LOOP = 2,
+    BRR_BLOCK_SIZE = 9
 };
 
 struct sample samp[128];
