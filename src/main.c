@@ -440,21 +440,21 @@ static void write_spc(FILE *f) {
 		memcpy(spc_copy, spc, 0x10000);
 		struct SamplePointers { WORD start, loop; } *sample_pointers = (struct SamplePointers *)&spc_copy[sample_ptr_base];
 
-		// Move the music from wherever it was in the spc to 0x3200... (ripping out part of the program block in the process...)
-		const WORD dstMusic = 0x3200;
-		const int music_size = compile_song(&cur_song);
-		memcpy(spc + dstMusic, &spc[cur_song.address], music_size);
-
-		// recompile so the addresses are correct...
-		cur_song.address = dstMusic;
-		compile_song(&cur_song);
-
 		enum {
 			SPC_HEADER_SIZE = 0x100, // Size of SPC file header
 			BRR_BLOCK_SIZE = 9, // Size of a BRR block in bytes
 			NUM_INSTRUMENTS = 80, // Number of instruments to export
 			BUFFER = 0x10 // Generic buffer size between tables/data
 		};
+
+		// Move the music from wherever it was in the spc to 0x3200... (ripping out part of the program block in the process...)
+		const WORD dstMusic = 0x3100;
+		const int music_size = compile_song(&cur_song);
+		memcpy(&spc[SPC_HEADER_SIZE + dstMusic], &spc_copy[cur_song.address], music_size);
+
+		// recompile so the addresses are correct...
+		cur_song.address = dstMusic;
+		compile_song(&cur_song);
 
 		// Size of the instruments table
 		const WORD inst_size = NUM_INSTRUMENTS*6;
