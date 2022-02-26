@@ -172,7 +172,7 @@ BOOL try_parse_music_address(const BYTE* spc, struct spcDetails *out_details) {
 		// Make sure terminator stays in bounds and allows space for one pattern block after it.
 		// Also arbitrarily limit number of patterns between loop and terminator to 256.
 		if ((BYTE *)terminator < &spc[0x10000 - 16 - 2]
-			&& terminator - (WORD *)&spc[loop_addr] <= 0x200
+			&& terminator - (WORD *)&spc[loop_addr] <= 0x100
 		) {
 			terminator++;
 		} else {
@@ -184,7 +184,7 @@ BOOL try_parse_music_address(const BYTE* spc, struct spcDetails *out_details) {
 	typedef WORD PATTERN[8];
 	PATTERN *patterns = (PATTERN*)&terminator[1];
 	unsigned int numPatterns = 0;
-	const unsigned int maxPatterns = (PATTERN *)&spc[0xFFFF] - patterns; // Amount of patterns that can possibly fit.
+	const unsigned int maxPatterns = (&spc[0xFFFF] - (BYTE *)patterns) / sizeof(PATTERN); // Amount of patterns that can possibly fit.
 	// Pattern is only valid if all channel addresses are ordered. (Ignore 0x0000 channel addresses)
 	for (unsigned int i = 0;
 		i < maxPatterns // Limit count to as many as can possibly fit in memory
