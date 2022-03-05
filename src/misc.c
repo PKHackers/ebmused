@@ -58,6 +58,37 @@ int MessageBox2(char *error, char *title, int flags) {
 	return ret;
 }
 
+static int dpi_x;
+static int dpi_y;
+
+void setup_dpi_scale_values(void) {
+	// Use the old DPI system, which works as far back as Windows 2000 Professional
+	HDC screen;
+	if (0) {
+		// Per-monitor DPI awareness checking would go here
+	} else if ((screen = GetDC(0)) != NULL) {
+		// https://docs.microsoft.com/en-us/previous-versions/ms969894(v=msdn.10)
+		dpi_x = GetDeviceCaps(screen, LOGPIXELSX);
+		dpi_y = GetDeviceCaps(screen, LOGPIXELSY);
+
+		ReleaseDC(0, screen);
+	} else {
+		printf("GetDC failed; filling in default values for DPI.\n");
+		dpi_x = 96;
+		dpi_y = 96;
+	}
+
+	printf("DPI values initialized: %d %d\n", dpi_x, dpi_y);
+}
+
+int scale_x(int n) {
+	return MulDiv(n, dpi_x, 96);
+}
+
+int scale_y(int n) {
+	return MulDiv(n, dpi_y, 96);
+}
+
 void *array_insert(void **array, int *size, int elemsize, int index) {
 	int new_size = elemsize * ++*size;
 	char *a = realloc(*array, new_size);

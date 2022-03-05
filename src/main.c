@@ -1,4 +1,4 @@
-#ifdef _MSC_VER
+#if 1
 	#define _ARGC __argc
 	#define _ARGV __argv
 #else
@@ -15,6 +15,15 @@
 #include <commdlg.h>
 #include <commctrl.h>
 #include "ebmusv2.h"
+
+enum {
+	MAIN_WINDOW_WIDTH = 720,
+	MAIN_WINDOW_HEIGHT = 540,
+	TAB_CONTROL_WIDTH = 600,
+	TAB_CONTROL_HEIGHT = 25,
+	CODELIST_WINDOW_WIDTH = 640,
+	CODELIST_WINDOW_HEIGHT = 480
+};
 
 struct song cur_song;
 BYTE packs_loaded[3] = { 0xFF, 0xFF, 0xFF };
@@ -35,7 +44,7 @@ static const char *const tab_class[NUM_TABS] = {
 	"ebmused_editor",
 	"ebmused_packs"
 };
-static char *const tab_name[NUM_TABS] = {
+static const char *const tab_name[NUM_TABS] = {
 	"Song Table",
 	"Instruments",
 	"Sequence Editor",
@@ -94,7 +103,7 @@ static void tab_selected(int new) {
 	GetClientRect(hwndMain, &rc);
 	tab_hwnd[new] = CreateWindow(tab_class[new], NULL,
 		WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
-		0, 25, rc.right, rc.bottom - 25,
+		0, scale_y(25), rc.right, rc.bottom - scale_y(25),
 		hwndMain, NULL, hinstance, NULL);
 
 	SendMessage(tab_hwnd[new], rom ? WM_ROM_OPENED : WM_ROM_CLOSED, 0, 0);
@@ -285,19 +294,33 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_CREATE: {
 		HWND tabs = CreateWindow(WC_TABCONTROL, NULL,
-			WS_CHILD | WS_VISIBLE | TCS_BUTTONS, 0, 0, 600, 25,
+			WS_CHILD | WS_VISIBLE | TCS_BUTTONS, 0, 0, scale_x(TAB_CONTROL_WIDTH), scale_y(TAB_CONTROL_HEIGHT),
 			hWnd, NULL, hinstance, NULL);
-		TC_ITEM item;
+
+		TC_ITEM item = {0};
 		item.mask = TCIF_TEXT;
 		for (int i = 0; i < NUM_TABS; i++) {
 			item.pszText = tab_name[i];
 			(void)TabCtrl_InsertItem(tabs, i, &item);
 		}
+
+		LOGFONT original_font;
+		GetObject(GetStockObject(SYSTEM_FONT), sizeof(LOGFONT), &original_font);
+
+		LOGFONT tabs_font;
+		GetObject(hfont, sizeof(LOGFONT), &tabs_font);
+		tabs_font.lfHeight = scale_y(original_font.lfHeight) - 2;
+		// strcpy(tabs_font.lfFaceName, "Tahoma");
+		// TODO: Refactor so this new font can be deleted
+		HFONT hTabsFont = CreateFontIndirect(&tabs_font);
+        SendMessage(tabs, WM_SETFONT, hTabsFont, TRUE);
 		break;
 	}
-	case WM_SIZE:
-		MoveWindow(tab_hwnd[current_tab], 0, 25, LOWORD(lParam), HIWORD(lParam) - 25, TRUE);
+	case WM_SIZE: {
+		int tabs_height = scale_y(TAB_CONTROL_HEIGHT);
+		MoveWindow(tab_hwnd[current_tab], 0, tabs_height, LOWORD(lParam), HIWORD(lParam) - tabs_height, TRUE);
 		break;
+	}
 	case WM_COMMAND: {
 		WORD id = LOWORD(wParam);
 		switch (id) {
@@ -371,7 +394,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case ID_HELP:
 			CreateWindow("ebmused_codelist", "Code list",
 				WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-				CW_USEDEFAULT, CW_USEDEFAULT, 640, 480,
+				CW_USEDEFAULT, CW_USEDEFAULT, scale_x(CODELIST_WINDOW_WIDTH), scale_y(CODELIST_WINDOW_HEIGHT),
 				NULL, NULL, hinstance, NULL);
 			break;
 		case ID_ABOUT: {
@@ -458,13 +481,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	wc.lpszClassName = "ebmused_tracker";
 	RegisterClass(&wc);
 
+	setup_dpi_scale_values();
 	InitCommonControls();
 
 //	SetUnhandledExceptionFilter(exfilter);
 
+	hfont = GetStockObject(DEFAULT_GUI_FONT);
+
 	hwndMain = CreateWindow("ebmused_main", "EarthBound Music Editor",
 		WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
-		CW_USEDEFAULT, CW_USEDEFAULT, 720, 540,
+		CW_USEDEFAULT, CW_USEDEFAULT, scale_x(MAIN_WINDOW_WIDTH), scale_y(MAIN_WINDOW_HEIGHT),
 		NULL, NULL, hInstance, NULL);
 	ShowWindow(hwndMain, nCmdShow);
 
@@ -472,8 +498,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	CheckMenuRadioItem(hmenu, ID_OCTAVE_1, ID_OCTAVE_1+4, ID_OCTAVE_1+2, MF_BYCOMMAND);
 
 	hcontextmenu = LoadMenu(hInstance, MAKEINTRESOURCE(IDM_CONTEXTMENU));
-
-	hfont = GetStockObject(DEFAULT_GUI_FONT);
 
 	HACCEL hAccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDA_ACCEL));
 
