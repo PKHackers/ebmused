@@ -11,8 +11,16 @@ void enable_menu_items(const BYTE *list, int flags) {
 HFONT oldfont;
 COLORREF oldtxt, oldbk;
 
+static int dpi_x;
+static int dpi_y;
+
+static HFONT hFixedFont;
+static HFONT hDefaultGUIFont;
+static HFONT hTabsFont;
+static HFONT hOrderFont;
+
 void set_up_hdc(HDC hdc) {
-	oldfont = SelectObject(hdc, hfont);
+	oldfont = SelectObject(hdc, default_font());
 	oldtxt = SetTextColor(hdc, GetSysColor(COLOR_WINDOWTEXT));
 	oldbk = SetBkColor(hdc, GetSysColor(COLOR_3DFACE));
 }
@@ -58,9 +66,6 @@ int MessageBox2(char *error, char *title, int flags) {
 	return ret;
 }
 
-static int dpi_x;
-static int dpi_y;
-
 void setup_dpi_scale_values(void) {
 	// Use the old DPI system, which works as far back as Windows 2000 Professional
 	HDC screen;
@@ -87,6 +92,52 @@ int scale_x(int n) {
 
 int scale_y(int n) {
 	return MulDiv(n, dpi_y, 96);
+}
+
+void set_up_fonts(void) {
+	LOGFONT lf = {};
+	LOGFONT lf2 = {};
+	GetObject(GetStockObject(ANSI_FIXED_FONT), sizeof(LOGFONT), &lf);
+    strcpy(lf.lfFaceName, "Courier New");
+	lf.lfHeight = scale_y(lf.lfHeight - 1);
+	hFixedFont = CreateFontIndirect(&lf);
+
+	// TODO: Supposedly it is better to use SystemParametersInfo to get a NONCLIENTMETRICS struct,
+	// which contains an appropriate LOGFONT for stuff and changes with theme.
+	hDefaultGUIFont = GetStockObject(DEFAULT_GUI_FONT);
+
+	GetObject(hDefaultGUIFont, sizeof(LOGFONT), &lf);
+	GetObject(GetStockObject(SYSTEM_FONT), sizeof(LOGFONT), &lf2);
+    lf.lfHeight = scale_y(lf2.lfHeight - 1);
+    hTabsFont = CreateFontIndirect(&lf);
+
+    GetObject(hDefaultGUIFont, sizeof(LOGFONT), &lf);
+    lf.lfWeight = FW_BOLD;
+    lf.lfHeight = scale_y(16);
+    hOrderFont = CreateFontIndirect(&lf);
+}
+
+void destroy_fonts(void) {
+	DeleteObject(hFixedFont);
+	DeleteObject(hDefaultGUIFont);
+	DeleteObject(hTabsFont);
+	DeleteObject(hOrderFont);
+}
+
+HFONT fixed_font(void) {
+	return hFixedFont;
+}
+
+HFONT default_font(void) {
+	return hDefaultGUIFont;
+}
+
+HFONT tabs_font(void) {
+	return hTabsFont;
+}
+
+HFONT order_font(void) {
+	return hOrderFont;
 }
 
 void *array_insert(void **array, int *size, int elemsize, int index) {

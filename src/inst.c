@@ -176,7 +176,7 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 	switch (uMsg) {
 	case WM_CREATE: {
 		prev_chmask = chmask;
-		WPARAM fixed = (WPARAM)GetStockObject(ANSI_FIXED_FONT);
+		WPARAM fixed = (WPARAM)fixed_font();
 		char buf[40];
 
 		// HACK: For some reason when the compiler has optimization turned on, it doesn't initialize the values of inst_list_template correctly. So we'll reset them here. . .

@@ -40,7 +40,7 @@ void create_controls(HWND hWnd, struct window_template *t, LPARAM cs) {
 
 		// Override the font, if it's not a "Sys" class that handles that normally
 		if (c->class[1] != 'y')
-			SendMessage(w, WM_SETFONT, (WPARAM)hfont, 0);
+			SendMessage(w, WM_SETFONT, (WPARAM)default_font(), 0);
 	}
 }
 

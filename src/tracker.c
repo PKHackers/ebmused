@@ -77,7 +77,6 @@ static struct parser cursor;
 
 static int pat_length;
 static PAINTSTRUCT ps;
-static HFONT hOrderFont;
 
 void tracker_scrolled() {
 	SetScrollPos(hwndTracker, SB_VERT, state.patpos, TRUE);
@@ -107,7 +106,7 @@ static COLORREF get_bkcolor(int sub_loops) {
 static void get_font_size(HWND hWnd) {
 	TEXTMETRIC tm;
 	HDC hdc = GetDC(hWnd);
-	HFONT oldfont = SelectObject(hdc, hfont);
+	HFONT oldfont = SelectObject(hdc, default_font());
 	GetTextMetrics(hdc, &tm);
 	SelectObject(hdc, oldfont);
 	ReleaseDC(hWnd, hdc);
@@ -357,7 +356,7 @@ LRESULT CALLBACK EditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				hWnd, (HMENU)(IDC_ENABLE_CHANNEL_0 + i), hinstance, NULL);
 			SendMessage(b, BM_SETCHECK, chmask >> i & 1, 0);
 			// This font was set up earlier by the ebmused_order control
-			SendMessage(b, WM_SETFONT, hOrderFont, 0);
+			SendMessage(b, WM_SETFONT, order_font(), 0);
 		}
 		EditWndProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(hWnd, IDC_EDITBOX), GWLP_WNDPROC, (LONG_PTR)TrackEditWndProc);
 		break;
@@ -451,18 +450,6 @@ LRESULT CALLBACK OrderWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 	switch (uMsg) {
 	case WM_CREATE:
 		hwndOrder = hWnd;
-		if (!hOrderFont) {
-			//LOGFONT original_font;
-			//GetObject(GetStockObject(SYSTEM_FONT), sizeof(LOGFONT), &original_font);
-
-			LOGFONT order_font;
-			GetObject(hfont, sizeof(LOGFONT), &order_font);
-			order_font.lfWeight = FW_BOLD;
-			order_font.lfHeight = scale_y(16);
-			// strcpy(order_font.lfFaceName, "Tahoma");
-			hOrderFont = CreateFontIndirect(&order_font);
-			// When do we delete this???
-		}
 		break;
 	case WM_LBUTTONDOWN: {
 		int pos = LOWORD(lParam) / scale_x(25);
@@ -492,7 +479,7 @@ LRESULT CALLBACK OrderWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		break;
 	case WM_PAINT: {
 		HDC hdc = BeginPaint(hWnd, &ps);
-		SelectObject(hdc, hOrderFont);
+		SelectObject(hdc, order_font());
 		RECT rc;
 		GetClientRect(hWnd, &rc);
 		for (int i = 0; i < cur_song.order_length; i++) {
@@ -843,7 +830,7 @@ static void cursor_to_xy(int x, int y, BOOL select) {
 //		int chan_xright = (tracker_width * (ch + 1) >> 3);
 
 		HDC hdc = GetDC(hwndTracker);
-		HFONT oldfont = SelectObject(hdc, hfont);
+		HFONT oldfont = SelectObject(hdc, default_font());
 
 		int target_pos = state.patpos + y * zoom / font_height;
 		pos = state.patpos + cs->next;

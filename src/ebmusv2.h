@@ -34,7 +34,6 @@ extern HINSTANCE hinstance;
 extern HWND hwndMain;
 #ifdef CreateWindow
 extern HMENU hmenu, hcontextmenu;
-extern HFONT hfont;
 #endif
 #define NUM_TABS 4
 extern HWND tab_hwnd[NUM_TABS];
@@ -157,6 +156,12 @@ int MessageBox2(char *error, char *title, int flags);
 void setup_dpi_scale_values(void);
 int scale_x(int n);
 int scale_y(int n);
+void set_up_fonts(void);
+void destroy_fonts(void);
+HFONT fixed_font(void);
+HFONT default_font(void);
+HFONT tabs_font(void);
+HFONT order_font(void);
 // Don't declare parameters, to avoid pointer conversion warnings
 // (you can't implicitly convert between foo** and void** because of
 //  word-addressed architectures. This is x86 so it's ok)

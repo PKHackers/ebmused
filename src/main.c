@@ -34,7 +34,6 @@ int midiDevice = -1;
 HINSTANCE hinstance;
 HWND hwndMain;
 HMENU hmenu, hcontextmenu;
-HFONT hfont;
 HWND tab_hwnd[NUM_TABS];
 
 static int current_tab;
@@ -303,17 +302,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			item.pszText = tab_name[i];
 			(void)TabCtrl_InsertItem(tabs, i, &item);
 		}
-
-		LOGFONT original_font;
-		GetObject(GetStockObject(SYSTEM_FONT), sizeof(LOGFONT), &original_font);
-
-		LOGFONT tabs_font;
-		GetObject(hfont, sizeof(LOGFONT), &tabs_font);
-		tabs_font.lfHeight = scale_y(original_font.lfHeight) - 2;
-		// strcpy(tabs_font.lfFaceName, "Tahoma");
-		// TODO: Refactor so this new font can be deleted
-		HFONT hTabsFont = CreateFontIndirect(&tabs_font);
-        SendMessage(tabs, WM_SETFONT, hTabsFont, TRUE);
+        SendMessage(tabs, WM_SETFONT, tabs_font(), TRUE);
 		break;
 	}
 	case WM_SIZE: {
@@ -486,7 +475,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 //	SetUnhandledExceptionFilter(exfilter);
 
-	hfont = GetStockObject(DEFAULT_GUI_FONT);
+	set_up_fonts();
 
 	hwndMain = CreateWindow("ebmused_main", "EarthBound Music Editor",
 		WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
@@ -512,5 +501,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		}
 	}
 	DestroyMenu(hcontextmenu);
+	destroy_fonts();
 	return msg.wParam;
 }
