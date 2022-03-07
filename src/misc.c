@@ -99,7 +99,8 @@ void set_up_fonts(void) {
 	LOGFONT lf2 = {};
 	GetObject(GetStockObject(ANSI_FIXED_FONT), sizeof(LOGFONT), &lf);
     strcpy(lf.lfFaceName, "Courier New");
-	lf.lfHeight = scale_y(lf.lfHeight - 1);
+	lf.lfHeight = scale_y(lf.lfHeight + 3);
+	lf.lfWidth = 0;
 	hFixedFont = CreateFontIndirect(&lf);
 
 	// TODO: Supposedly it is better to use SystemParametersInfo to get a NONCLIENTMETRICS struct,
