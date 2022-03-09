@@ -86,6 +86,7 @@ static void fill_buffer() {
 			int ipos = c->samp_pos >> 15;
 
 			struct sample *s = c->samp;
+			if (!s) continue;
 			if (ipos > s->length) {
 				printf("This can't happen. %d > %d\n", ipos, s->length);
 				c->samp_pos = -1;

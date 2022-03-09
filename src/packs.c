@@ -120,7 +120,7 @@ void select_block_by_address(int spc_addr) {
 
 struct block *save_cur_song_to_pack() {
 	struct block *b = get_cur_block();
-	if (cur_song.changed) {
+	if (b && cur_song.changed) {
 		int size = compile_song(&cur_song);
 		b->size = size;
 		b->spc_address = cur_song.address;

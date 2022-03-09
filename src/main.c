@@ -130,7 +130,170 @@ err1:
 	fclose(f);
 }
 
-/*static void import_spc() {
+struct spcDetails {
+	WORD music_table_addr;
+	WORD instrument_table_addr;
+	WORD music_addr;
+	BYTE music_index;
+};
+
+BOOL try_parse_music_table(const BYTE *spc, struct spcDetails *out_details) {
+	if (memcmp(spc, "\x1C\x5D\xF5", 3) != 0) return FALSE;
+	WORD addr_hi = *((WORD*)&spc[3]);
+
+	// Check for Konami-only branch
+	if (spc[5] == 0xF0) {
+		spc += 2; // skip two bytes (beq ..)
+	}
+
+	if (spc[5] != 0xFD) return FALSE;
+
+	// Check for Starfox branch
+	if (memcmp(&spc[6], "\xD0\x03\xC4", 3) == 0 && spc[10] == 0x6F) {
+		spc += 5; // skip these 5 bytes
+	}
+
+	if (spc[6] != 0xF5) return FALSE; // mov a,
+	WORD addr_lo = *((WORD*)&spc[7]); //       $....+x
+
+	if (spc[9] != 0xDA || spc[10] != 0x40) return FALSE; // mov $40,ya
+
+	// Validate retrieved address
+	if (addr_lo != addr_hi - 1) return FALSE;
+
+	out_details->music_table_addr = addr_lo;
+	return TRUE;
+}
+
+BOOL try_parse_music_address(const BYTE* spc, struct spcDetails *out_details) {
+	WORD loop_addr = *(WORD *)&spc[0x40];
+	WORD *terminator = (WORD *)&spc[loop_addr];
+	while (terminator[0]) {
+		// Make sure terminator stays in bounds and allows space for one pattern block after it.
+		// Also arbitrarily limit number of patterns between loop and terminator to 256.
+		if ((BYTE *)terminator < &spc[0x10000 - 16 - 2]
+			&& terminator - (WORD *)&spc[loop_addr] <= 0x100
+		) {
+			terminator++;
+		} else {
+			return FALSE;
+		}
+	}
+
+	// Count all unique patterns past the terminator.
+	typedef WORD PATTERN[8];
+	PATTERN *patterns = (PATTERN*)&terminator[1];
+	unsigned int numPatterns = 0;
+	const unsigned int maxPatterns = (&spc[0xFFFF] - (BYTE *)patterns) / sizeof(PATTERN); // Amount of patterns that can possibly fit.
+	// Pattern is only valid if all channel addresses are ordered. (Ignore 0x0000 channel addresses)
+	for (unsigned int i = 0;
+		i < maxPatterns // Limit count to as many as can possibly fit in memory
+			&& (patterns[i][0] < patterns[i][1] || !patterns[i][1])
+			&& (patterns[i][1] < patterns[i][2] || !patterns[i][2])
+			&& (patterns[i][2] < patterns[i][3] || !patterns[i][3])
+			&& (patterns[i][3] < patterns[i][4] || !patterns[i][4])
+			&& (patterns[i][4] < patterns[i][5] || !patterns[i][5])
+			&& (patterns[i][5] < patterns[i][6] || !patterns[i][6])
+			&& (patterns[i][6] < patterns[i][7] || !patterns[i][7])
+			;
+		i++) {
+		numPatterns = i + 1;
+	}
+
+	// sanity check. Assert smallest pattern is greater than 0xFF and number of patterns is less than as many as can fit in memory
+	if (patterns[0][0] <= 0xFF || numPatterns == 0 || numPatterns >= maxPatterns) return FALSE;
+
+	// Find the first pattern by iterating backwards until one pattern doesn't point at a pattern address.
+	WORD *music_addr_ptr = (WORD*)&spc[loop_addr];
+	BOOL patternExists = TRUE;
+	for (WORD* prev = &music_addr_ptr[-1]; prev && patternExists; prev--) {
+		patternExists = FALSE;
+		// if any patterns contain prev, continue
+		for (unsigned int i = 0; i < numPatterns; i++) {
+			if (patterns[i] == (WORD*)&spc[*prev]) {
+				patternExists = TRUE;
+				music_addr_ptr = prev;
+				break;
+			}
+		}
+	}
+
+	// sanity check
+	if ((BYTE*)music_addr_ptr - spc <= 0xFF) return FALSE;
+
+	out_details->music_addr = (BYTE*)music_addr_ptr - spc;
+	return TRUE;
+}
+
+BOOL try_parse_inst_directory(const BYTE *spc, struct spcDetails *out_details) {
+	if (memcmp(spc, "\xCF\xDA\x14\x60\x98", 5) == 0 && memcmp(&spc[6], "\x14\x98", 2) == 0 && spc[9] == 0x15) {
+		out_details->instrument_table_addr = spc[5] | (spc[8] << 8);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+enum SPC_RESULTS {
+	HAS_MUSIC = 1 << 0,
+	HAS_MUSIC_TABLE = 1 << 1,
+	HAS_INSTRUMENTS = 1 << 2
+};
+
+enum SPC_RESULTS try_parse_spc(const BYTE* spc, struct spcDetails *out_details) {
+	BOOL foundMusic = FALSE,
+		foundMusicTable = FALSE,
+		foundInst = FALSE;
+	// For i in 0 .. 0xFF00, and also stop if all 3 things we're looking for have been found
+	for (int i = 0; i < 0xFF00 && !(foundMusicTable && foundInst); i++) {
+		if (!foundMusicTable && spc[i] == 0x1C)
+			foundMusicTable = try_parse_music_table(&spc[i], out_details);
+		else if (!foundInst && spc[i] == 0xCF)
+			foundInst = try_parse_inst_directory(&spc[i], out_details);
+	}
+
+	foundMusic = try_parse_music_address(spc, out_details);
+
+	// If we couldn't find the music via snooping the $40 address, try checking if we found a music table.
+	if (!foundMusic && foundMusicTable) {
+		// Try to get the bgm index from one of these locations, the first that isn't 0...
+		BYTE bgm_index = spc[0x00] ? spc[0x00]
+			: spc[0x04] ? spc[0x04]
+			: spc[0x08] ? spc[0x08]
+			: spc[0xF3] ? spc[0xF3]
+			: spc[0xF4];
+		if (bgm_index) {
+			out_details->music_index = bgm_index;
+			out_details->music_addr = ((WORD *)&spc[out_details->music_table_addr])[bgm_index];
+			foundMusic = TRUE;
+		} else {
+			// If we couldn't find the bgm index, try to guess it from the table using the pointer at 0x40
+			WORD music_addr = *((WORD*)&spc[0x40]);
+			WORD closestDiff = 0xFFFF;
+			for (unsigned int i = 0; i < 0xFF; i++) {
+				WORD addr = ((WORD *)&spc[out_details->music_table_addr])[i];
+				if (music_addr < addr && addr - music_addr < closestDiff) {
+					closestDiff = addr - music_addr;
+					bgm_index = i;
+				}
+			}
+
+			if (music_addr > 0xFF) {
+				out_details->music_addr = music_addr;
+				out_details->music_index = 0;
+				foundMusic = TRUE;
+			}
+		}
+	}
+
+	enum SPC_RESULTS results = 0;
+	if (foundMusicTable) results |= HAS_MUSIC_TABLE;
+	if (foundMusic) results |= HAS_MUSIC;
+	if (foundInst) results |= HAS_INSTRUMENTS;
+	return results;
+}
+
+static void import_spc() {
 	char *file = open_dialog(GetOpenFileName,
 		"SPC Savestates (*.spc)\0*.spc\0All Files\0*.*\0",
 		NULL,
@@ -143,26 +306,61 @@ err1:
 		return;
 	}
 
-	fseek(f, 0x100, SEEK_SET);
-	fread(spc, 65536, 1, f);
-	fseek(f, 0x1015D, SEEK_SET);
-	int samp_ptrs = fgetc(f) << 8;
-	decode_samples((WORD *)&spc[samp_ptrs]);
-	for (int i = 0; i < 0xfff0; i++) {
-		if (memcmp(&spc[i], "\x8D\x06\xCF\xDA\x14\x60\x98", 7) == 0) {
-			inst_base = spc[i+7] | spc[i+10] << 8;
-			printf("Instruments found: %X\n", inst_base);
-			break;
+	// Backup the currently loaded SPC in case we need to restore it upon an error.
+	// This can be updated once methods like decode_samples don't rely on the global "spc" variable.
+	BYTE backup_spc[0x10000];
+	memcpy(backup_spc, spc, 0x10000);
+	WORD original_sample_ptr_base = sample_ptr_base;
+
+	BYTE dsp[0x80];
+
+	if (fseek(f, 0x100, SEEK_SET) == 0
+		&& fread(spc, 0x10000, 1, f) == 1
+		&& fread(dsp, 0x80, 1, f) == 1
+	) {
+		sample_ptr_base = dsp[0x5D] << 8;
+		free_samples();
+		decode_samples(&spc[sample_ptr_base]);
+
+		struct spcDetails details;
+		enum SPC_RESULTS results = try_parse_spc(spc, &details);
+		if (results) {
+			if (results & HAS_INSTRUMENTS) {
+				printf("Instrument table found: %#X\n", details.instrument_table_addr);
+				inst_base = details.instrument_table_addr;
+			}
+			if (results & HAS_MUSIC) {
+				printf("Music table found: %#X\n", details.music_table_addr);
+				printf("Music index found: %#X\n", details.music_index);
+				printf("Music found: %#X\n", details.music_addr);
+
+				free_song(&cur_song);
+				decompile_song(&cur_song, details.music_addr, 0xffff);
+			}
+
+			initialize_state();
+			SendMessage(tab_hwnd[current_tab], WM_SONG_IMPORTED, 0, 0);
+		} else {
+			// Restore SPC state and samples
+			memcpy(spc, backup_spc, 0x10000);
+			sample_ptr_base = original_sample_ptr_base;
+			free_samples();
+			decode_samples(&spc[sample_ptr_base]);
+
+			MessageBox2("Could not parse SPC.", "SPC Import", MB_ICONEXCLAMATION);
 		}
+	} else {
+		// Restore SPC state
+		memcpy(spc, backup_spc, 0x10000);
+
+		if (feof(f))
+			MessageBox2("End-of-file reached while reading the SPC file", "Import", MB_ICONEXCLAMATION);
+		else
+			MessageBox2("Error reading the SPC file", "Import", MB_ICONEXCLAMATION);
 	}
-	int song_addr = spc[0x40] | spc[0x41] << 8;
-	free_song(&cur_song);
-	decompile_song(&cur_song, song_addr - 2, 0xffff);
-	initialize_state();
-	SendMessage(tab_hwnd[current_tab], WM_SONG_IMPORTED, 0, 0);
 
 	fclose(f);
-}*/
+}
 
 static void export() {
 	struct block *b = save_cur_song_to_pack();
@@ -198,7 +396,7 @@ static void export_spc() {
 			}
 		}
 	} else {
-		MessageBox2("No song loaded.", "Export SPC", MB_ICONEXCLAMATION);
+		MessageBox2("No song loaded", "Export SPC", MB_ICONEXCLAMATION);
 	}
 }
 
@@ -214,7 +412,7 @@ static void pack_to_spc(BYTE pack, BYTE* spc) {
 			if (b->size <= 0x10000 - b->spc_address) {
 				memcpy(spc + header_size + b->spc_address, b->data, b->size);
 			} else {
-				printf("SPC pack %X block %d too large.\n", pack, block);
+				printf("SPC pack 0x%x block %d too large.\n", pack, block);
 			}
 		}
 	}
@@ -233,27 +431,126 @@ static void write_spc(FILE *f) {
 		BYTE *new_spc = memcpy(malloc(spc_size), res_data, spc_size);
 
 		// Copy packs/blocks to byte array
-		for (int pack = 0; pack < 3; pack++) {
-			pack_to_spc(packs_loaded[pack], new_spc);
+//		for (int pack = 0; pack < 3; pack++) {
+//			pack_to_spc(packs_loaded[pack], new_spc);
+//		}
+
+		// compile_song corrupts the spc and any potential samples/instruments, so we need to make a copy first...
+		BYTE spc_copy[0x10000];
+		memcpy(spc_copy, spc, 0x10000);
+		struct SamplePointers { WORD start, loop; } *sample_pointers = (struct SamplePointers *)&spc_copy[sample_ptr_base];
+
+		enum {
+			SPC_HEADER_SIZE = 0x100, // Size of SPC file header
+			BRR_BLOCK_SIZE = 9, // Size of a BRR block in bytes
+			NUM_INSTRUMENTS = 80, // Number of instruments to export
+			BUFFER = 0x10 // Generic buffer size between tables/data
+		};
+
+		// Move the music from wherever it was in the spc to 0x3200... (ripping out part of the program block in the process...)
+		const WORD dstMusic = 0x3100;
+		const int music_size = compile_song(&cur_song);
+		memcpy(&spc[SPC_HEADER_SIZE + dstMusic], &spc_copy[cur_song.address], music_size);
+
+		// recompile so the addresses are correct...
+		cur_song.address = dstMusic;
+		compile_song(&cur_song);
+
+		// Size of the instruments table
+		const WORD inst_size = NUM_INSTRUMENTS*6;
+		// Calculate buffer size needed for sample pointer table to round to nearest 0x100.
+		const WORD REMAINDER = 0x100 - ((dstMusic + music_size) & 0xFF);
+		const WORD dstSamplePointers = dstMusic + music_size + REMAINDER;
+		const WORD dstInstruments = dstSamplePointers + 0x4*NUM_INSTRUMENTS + BUFFER;
+		const WORD dstSamples = dstInstruments + inst_size + BUFFER;
+
+		// Blank out some space (for the buffer spaces)
+		memset(&new_spc[SPC_HEADER_SIZE + dstMusic], 0, dstSamples - dstMusic);
+
+		// Copy music data...
+		printf("Packing music data to $%x\n", cur_song.address);
+		memcpy(&new_spc[SPC_HEADER_SIZE + dstMusic], &spc[cur_song.address], music_size);
+		// Use the copy we made to restore the working spc to before compile_song borked it with the dstMusic address...
+		memcpy(spc, spc_copy, 0x10000);
+
+		// Copy instrument data...
+		printf("Packing instrument table to $%x\n", dstInstruments);
+		memcpy(&new_spc[SPC_HEADER_SIZE + dstInstruments], &spc_copy[inst_base], inst_size);
+
+		// Copy sample data and pointers...
+		// Remap sample data to new locations to repack them
+		struct {
+			WORD src, len, dst;
+		} sampleMap [NUM_INSTRUMENTS];
+		WORD offset = 0;
+		for (unsigned int i = 0; i < NUM_INSTRUMENTS && sample_pointers[i].start < 0xFF00 && sample_pointers[i].start > 0xFF; i++)
+		{
+			const WORD src_addr = sample_pointers[i].start;
+			WORD len = sample_pointers[i].loop - sample_pointers[i].start;
+			WORD dst_addr = 0;
+
+			// Find if we've already stored this sample somewhere
+			for (unsigned int j = 0; j < i; j++) {
+				if (sampleMap[j].src == src_addr && sampleMap[j].len == len) {
+					dst_addr = sampleMap[j].dst;
+					len = sampleMap[j].len;
+					break;
+				}
+			}
+
+			// If we haven't, add it
+			if (!dst_addr) {
+				unsigned int num_brr_blocks = count_brr_blocks(spc_copy, src_addr);
+				if (num_brr_blocks == 0) {
+					printf("Invalid BRR block. Instrument: %d BRR source: $%x\n", i, src_addr);
+				} else if (offset < 0xFFFF - dstSamples - num_brr_blocks * BRR_BLOCK_SIZE) {
+					dst_addr = dstSamples + offset;
+					printf("Packing sample #%d: $%x size: 0x%x\n", i, dst_addr, num_brr_blocks * BRR_BLOCK_SIZE);
+					memcpy(&new_spc[SPC_HEADER_SIZE + dst_addr], &spc_copy[src_addr], num_brr_blocks * BRR_BLOCK_SIZE);
+
+					offset += num_brr_blocks * BRR_BLOCK_SIZE;
+				} else {
+					printf("Sample #%d is too big. (Destination: $%x, size: 0x%x) Skipped...\n", i, dstSamples + offset, num_brr_blocks * BRR_BLOCK_SIZE);
+				}
+			}
+
+			sampleMap[i].src = src_addr;
+			sampleMap[i].dst = dst_addr;
+			sampleMap[i].len = len;
+			WORD loop_addr = dst_addr + len;
+			printf("Packing sample pointer %d to $%x: %x %x\n", i, dstSamplePointers +0x4*i, dst_addr, loop_addr);
+			memcpy(&new_spc[SPC_HEADER_SIZE + dstSamplePointers + 0x4*i], &dst_addr, 2);
+			memcpy(&new_spc[SPC_HEADER_SIZE + dstSamplePointers + 0x4*i + 0x2], &loop_addr, 2);
 		}
 
-		// Set pattern repeat location. (Not absolutely necessary...)
-		const WORD repeat_address = cur_song.address + 0x2*cur_song.repeat_pos;
-		memcpy(new_spc + 0x140, &repeat_address, 2);
+		// We're done copying the important stuff, now we just need to adjust some pointers in the music program.
+		{
+			// Set pattern repeat location
+			const WORD repeat_address = dstMusic + 0x2*cur_song.repeat_pos;
+			memcpy(&new_spc[SPC_HEADER_SIZE + 0x40], &repeat_address, 2);
 
-		// Set BGM to load
-		const BYTE bgm = selected_bgm + 1;
-		memcpy(new_spc + 0x1F4, &bgm, 1);
+			// Set BGM to load
+			const BYTE bgm = selected_bgm + 1;
+			memcpy(&new_spc[SPC_HEADER_SIZE + 0xF4], &bgm, 1);
 
-		// Update song address of current BGM within the music program
-		memcpy(new_spc + 0x2F48 + 0x2*bgm, &cur_song.address, 2);
+			// Update song address of current BGM within the music program
+			memcpy(&new_spc[0x2F48 + 0x2*bgm], &dstMusic, 2);
+
+			// Update instrument loader addresses
+			new_spc[SPC_HEADER_SIZE + 0x972] = dstInstruments & 0xFF;
+			new_spc[SPC_HEADER_SIZE + 0x975] = dstInstruments >> 8;
+
+			// Update sample address high byte
+			new_spc[SPC_HEADER_SIZE + 0x1005D] = dstSamplePointers >> 8; // DSP
+			new_spc[SPC_HEADER_SIZE + 0x52A] = dstSamplePointers >> 8; // Loader (for good measure)
+		}
 
 		// Save byte array to file
 		fwrite(new_spc, spc_size, 1, f);
 
 		free(new_spc);
 	} else {
-		MessageBox2("Blank SPC could not be loaded.", "Export SPC", MB_ICONEXCLAMATION);
+		MessageBox2("Template SPC could not be loaded", "Export SPC", MB_ICONEXCLAMATION);
 	}
 }
 
@@ -319,7 +616,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			SetWindowText(hWnd, "EarthBound Music Editor");
 			break;
 		case ID_IMPORT: import(); break;
-//		case ID_IMPORT_SPC: import_spc(); break;
+		case ID_IMPORT_SPC: import_spc(); break;
 		case ID_EXPORT: export(); break;
 		case ID_EXPORT_SPC: export_spc(); break;
 		case ID_EXIT: DestroyWindow(hWnd); break;

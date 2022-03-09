@@ -49,6 +49,8 @@ BOOL save_all_packs(void);
 
 // brr.c
 extern struct sample samp[128];
+extern WORD sample_ptr_base;
+extern unsigned int count_brr_blocks(const BYTE *spc, WORD start);
 void decode_samples(const unsigned char *ptrtable);
 void free_samples(void);
 
