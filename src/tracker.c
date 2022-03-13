@@ -482,10 +482,11 @@ LRESULT CALLBACK OrderWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		SelectObject(hdc, order_font());
 		RECT rc;
 		GetClientRect(hWnd, &rc);
+		int order_width = scale_x(25);
 		for (int i = 0; i < cur_song.order_length; i++) {
 			char buf[6];
 			int len = sprintf(buf, "%d", cur_song.order[i]);
-			rc.right = rc.left + scale_x(25);
+			rc.right = rc.left + order_width;
 			COLORREF tc = 0, bc = 0;
 			if (i == pattop_state.ordnum) {
 				tc = SetTextColor(hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
@@ -1370,9 +1371,10 @@ static HDC hdcState;
 static void show_state(int pos, const char *buf) {
 	static const WORD xt[] = { 20, 80, 180, 240, 300, 360 };
 	RECT rc;
-	rc.left = scale_x(xt[pos >> 4]);
+	int left = xt[pos >> 4];
+	rc.left = scale_x(left);
 	rc.top = (pos & 15) * font_height + 1;
-	rc.right = scale_x(rc.left + 60);
+	rc.right = scale_x(left + 60);
 	rc.bottom = rc.top + font_height;
 	ExtTextOut(hdcState, rc.left, rc.top, ETO_OPAQUE, &rc, buf, strlen(buf), NULL);
 }

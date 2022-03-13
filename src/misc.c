@@ -1,3 +1,4 @@
+#define _WIN32_WINNT 0x600
 #include <stdio.h>
 #include <stdlib.h>
 #define WIN32_LEAN_AND_MEAN
@@ -95,27 +96,53 @@ int scale_y(int n) {
 }
 
 void set_up_fonts(void) {
-	LOGFONT lf = {};
-	LOGFONT lf2 = {};
-	GetObject(GetStockObject(ANSI_FIXED_FONT), sizeof(LOGFONT), &lf);
-    strcpy(lf.lfFaceName, "Courier New");
-	lf.lfHeight = scale_y(lf.lfHeight + 3);
-	lf.lfWidth = 0;
-	hFixedFont = CreateFontIndirect(&lf);
+	LOGFONT lf = {0};
+	LOGFONT lf2 = {0};
 
-	// TODO: Supposedly it is better to use SystemParametersInfo to get a NONCLIENTMETRICS struct,
-	// which contains an appropriate LOGFONT for stuff and changes with theme.
+	HFONT h = GetStockObject(ANSI_FIXED_FONT);
+	int err = GetObject(h, sizeof(LOGFONT), &lf);
+	if (err != sizeof(LOGFONT)) {
+		printf("ANSI_FIXED_FONT: only %d bytes written to lf!\n", err);
+		hFixedFont = h;
+	} else {
+		strcpy(lf.lfFaceName, "Courier New");
+		lf.lfHeight = scale_y(lf.lfHeight + 3);
+		lf.lfWidth = 0;
+		lf.lfWeight = FW_BOLD;
+		hFixedFont = CreateFontIndirect(&lf);
+	}
+
 	hDefaultGUIFont = GetStockObject(DEFAULT_GUI_FONT);
 
-	GetObject(hDefaultGUIFont, sizeof(LOGFONT), &lf);
-	GetObject(GetStockObject(SYSTEM_FONT), sizeof(LOGFONT), &lf2);
-    lf.lfHeight = scale_y(lf2.lfHeight - 1);
-    hTabsFont = CreateFontIndirect(&lf);
+	err = GetObject(hDefaultGUIFont, sizeof(LOGFONT), &lf);
+	if (err != sizeof(LOGFONT)) {
+		printf("DEFAULT_GUI_FONT: only %d bytes written to lf!\n", err);
+		hOrderFont = GetStockObject(SYSTEM_FONT);
+	} else {
+		lf.lfWeight = FW_BOLD;
+		lf.lfHeight = scale_y(16);
+		hOrderFont = CreateFontIndirect(&lf);
+	}
 
-    GetObject(hDefaultGUIFont, sizeof(LOGFONT), &lf);
-    lf.lfWeight = FW_BOLD;
-    lf.lfHeight = scale_y(16);
-    hOrderFont = CreateFontIndirect(&lf);
+
+	NONCLIENTMETRICS ncm = {0};
+	// This size is different in 2000 and XP.
+	// https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-nonclientmetricsa#remarks
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+	BOOL ncmInitialized = SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0);
+	if (!ncmInitialized) {
+		err = GetObject(GetStockObject(SYSTEM_FONT), sizeof(LOGFONT), &lf2);
+		if (err != sizeof(LOGFONT)) {
+			printf("SYSTEM_FONT: only %d bytes written to lf2!\n", err);
+			hTabsFont = hDefaultGUIFont;
+		}
+		lf.lfHeight = scale_y(lf2.lfHeight - 1);
+		hTabsFont = CreateFontIndirect(&lf);
+	} else {
+		lf = ncm.lfMessageFont;
+		lf.lfHeight = scale_y(16 + 2 * ncm.iPaddedBorderWidth);
+		hTabsFont = CreateFontIndirect(&lf);
+	}
 }
 
 void destroy_fonts(void) {

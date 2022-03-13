@@ -55,7 +55,8 @@ static void decode_brr_block(int16_t *buffer, const uint8_t *block, BOOL first_b
 			s -= 16;
 		}
 
-		s <<= range - 1;
+		s <<= range;
+		s >>= 1;
 		if (range > 12) {
 			s = (s < 0) ? -(1 << 11) : 0;
 		}
