@@ -98,6 +98,13 @@ int scale_y(int n) {
 void set_up_fonts(void) {
 	LOGFONT lf = {0};
 	LOGFONT lf2 = {0};
+	NONCLIENTMETRICS ncm = {0};
+	// This size is different in 2000 and XP. That could be causing different values to be returned
+	// between the Windows SDK and MinGW builds for the new iPaddedBorderWidth field?
+	// So don't use that field for now.
+	// https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-nonclientmetricsa#remarks
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+	BOOL ncmInitialized = SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0);
 
 	HFONT h = GetStockObject(ANSI_FIXED_FONT);
 	int err = GetObject(h, sizeof(LOGFONT), &lf);
@@ -105,10 +112,17 @@ void set_up_fonts(void) {
 		printf("ANSI_FIXED_FONT: only %d bytes written to lf!\n", err);
 		hFixedFont = h;
 	} else {
-		strcpy(lf.lfFaceName, "Courier New");
-		lf.lfHeight = scale_y(lf.lfHeight + 3);
-		lf.lfWidth = 0;
-		lf.lfWeight = FW_BOLD;
+		strcpy(lf.lfFaceName, "Consolas");
+		if (!ncmInitialized) {
+			lf.lfHeight = scale_y(lf.lfHeight + 3);
+			lf.lfWidth = 0;
+		} else {
+			// Make the font wide enough to nearly fill the instrument view
+			// (Courier New/Consolas are roughly twice as tall as they are wide, and the header has
+			// 20 characters)
+			lf.lfWidth = (scale_x(180) - ncm.iScrollWidth) / 20;
+			lf.lfHeight = lf.lfWidth * 2;
+		}
 		hFixedFont = CreateFontIndirect(&lf);
 	}
 
@@ -124,12 +138,6 @@ void set_up_fonts(void) {
 		hOrderFont = CreateFontIndirect(&lf);
 	}
 
-
-	NONCLIENTMETRICS ncm = {0};
-	// This size is different in 2000 and XP.
-	// https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-nonclientmetricsa#remarks
-	ncm.cbSize = sizeof(NONCLIENTMETRICS);
-	BOOL ncmInitialized = SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0);
 	if (!ncmInitialized) {
 		err = GetObject(GetStockObject(SYSTEM_FONT), sizeof(LOGFONT), &lf2);
 		if (err != sizeof(LOGFONT)) {
@@ -140,7 +148,7 @@ void set_up_fonts(void) {
 		hTabsFont = CreateFontIndirect(&lf);
 	} else {
 		lf = ncm.lfMessageFont;
-		lf.lfHeight = scale_y(16 + 2 * ncm.iPaddedBorderWidth);
+		lf.lfHeight = scale_y(16);
 		hTabsFont = CreateFontIndirect(&lf);
 	}
 }
