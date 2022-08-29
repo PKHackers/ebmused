@@ -337,7 +337,7 @@ LRESULT CALLBACK PackListWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 			static char *const colname[] = { "#", "Address", "Size", "Status", "Description" };
 			static const WORD cx[] = { 30, 120, 60, 100, 270 };
 			lvc.pszText = colname[i];
-			lvc.cx = cx[i];
+			lvc.cx = scale_x(cx[i]);
 			(void)ListView_InsertColumn(rom_list, i, &lvc);
 			(void)ListView_InsertColumn(inmem_list, i, &lvc);
 		}

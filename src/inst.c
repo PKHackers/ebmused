@@ -61,7 +61,7 @@ static void draw_square(int note, HBRUSH brush) {
 	HDC hdc = GetDC(insttest);
 	int x = (note / 12 + 1) * 20;
 	int y = (note % 12 + 1) * 20;
-	RECT rc = { x, y, x + 19, y + 19 };
+	RECT rc = { scale_x(x), scale_y(y), scale_x(x + 20) - 1, scale_y(y + 20) - 1 };
 	FillRect(hdc, &rc, brush);
 	ReleaseDC(insttest, hdc);
 }
@@ -148,18 +148,18 @@ LRESULT CALLBACK InstTestWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		HDC hdc = (HDC)wParam;
 		set_up_hdc(hdc);
 		for (char o = '1'; o <= '6'; o++)
-			TextOut(hdc, 20 * (o - '0'), 0, &o, 1);
+			TextOut(hdc, scale_x(20 * (o - '0')), 0, &o, 1);
 		for (int i = 0; i < 12; i++)
-			TextOut(hdc, 0, 20 * (i + 1), "C C#D D#E F F#G G#A A#B " + 2*i, 2);
-		Rectangle(hdc, 19, 19, 140, 260);
+			TextOut(hdc, 0, scale_y(20 * (i + 1)), "C C#D D#E F F#G G#A A#B " + 2*i, 2);
+		Rectangle(hdc, scale_x(19), scale_y(19), scale_x(140), scale_y(260));
 		reset_hdc(hdc);
 		return 1;
 	}
 	case WM_LBUTTONDOWN:
 	case WM_LBUTTONUP: {
-		int octave = LOWORD(lParam) / 20 - 1;
+		int octave = LOWORD(lParam) / scale_x(20) - 1;
 		if (octave < 0 || octave > 5) break;
-		int note = HIWORD(lParam) / 20 - 1;
+		int note = HIWORD(lParam) / scale_y(20) - 1;
 		if (note < 0 || note > 11) break;
 		note += 12 * octave;
 		if (uMsg == WM_LBUTTONDOWN) note_on(note, 24);
@@ -176,7 +176,7 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 	switch (uMsg) {
 	case WM_CREATE: {
 		prev_chmask = chmask;
-		WPARAM fixed = (WPARAM)GetStockObject(ANSI_FIXED_FONT);
+		WPARAM fixed = (WPARAM)fixed_font();
 		char buf[40];
 
 		// HACK: For some reason when the compiler has optimization turned on, it doesn't initialize the values of inst_list_template correctly. So we'll reset them here. . .

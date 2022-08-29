@@ -34,7 +34,6 @@ extern HINSTANCE hinstance;
 extern HWND hwndMain;
 #ifdef CreateWindow
 extern HMENU hmenu, hcontextmenu;
-extern HFONT hfont;
 #endif
 #define NUM_TABS 4
 extern HWND tab_hwnd[NUM_TABS];
@@ -56,10 +55,37 @@ void free_samples(void);
 
 // ctrltbl.c
 struct control_desc {
-	char *class; short x, y, xsize, ysize; char *title; DWORD id; DWORD style;
+    // Window class (a class atom or class name; the first argument to CreateWindow)
+	const char *class;
+	// Position and dimensions in parent window (in pixels, before DPI scaling)
+	// Negative x and y are positioned relative to the right edge of the parent window
+	short x;
+	short y;
+	// Non-positive xsize and ysize are modulo the width/height of the parent window.
+	// This does NOT mean they specify the amount of padding from the right/bottom edge of the
+	// window!
+	short xsize;
+	short ysize;
+	// Window title (text associated with control; the second argument to CreateWindow)
+	const char *title;
+	// Child window identifier (IDC_ constant used in window procedure)
+	DWORD id;
+	// Window style (the third argument to CreateWindow)
+	DWORD style;
 };
 struct window_template {
-	int num, lower, winsize, divy; const struct control_desc *controls;
+    // Number of elements in `controls`
+	int num;
+	// How many elements of `controls` take up the area below divy (usually equal to `num`)
+	int lower;
+	// Packed dimensions of window (CREATESTRUCT.cx concatenated to CREATESTRUCT.cy)
+	DWORD winsize;
+	// y coordinate of top of lower half of window (usually 0, so that the entire window is the
+	// lower half).
+	// THIS FIELD IS ALREADY DPI-SCALED! It is calculated dynamically for tabs that actually use it.
+	int divy;
+	// Pointer to array of child window descriptions
+	const struct control_desc *controls;
 };
 #ifdef CreateWindow
 void create_controls(HWND hWnd, struct window_template *t, LPARAM cs);
@@ -129,6 +155,15 @@ int fgetw(FILE *f);
 BOOL SetDlgItemHex(HWND hwndDlg, int idControl, unsigned int uValue, int size);
 int GetDlgItemHex(HWND hwndDlg, int idControl);
 int MessageBox2(char *error, char *title, int flags);
+void setup_dpi_scale_values(void);
+int scale_x(int n);
+int scale_y(int n);
+void set_up_fonts(void);
+void destroy_fonts(void);
+HFONT fixed_font(void);
+HFONT default_font(void);
+HFONT tabs_font(void);
+HFONT order_font(void);
 // Don't declare parameters, to avoid pointer conversion warnings
 // (you can't implicitly convert between foo** and void** because of
 //  word-addressed architectures. This is x86 so it's ok)

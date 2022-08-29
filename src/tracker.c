@@ -106,7 +106,7 @@ static COLORREF get_bkcolor(int sub_loops) {
 static void get_font_size(HWND hWnd) {
 	TEXTMETRIC tm;
 	HDC hdc = GetDC(hWnd);
-	HFONT oldfont = SelectObject(hdc, hfont);
+	HFONT oldfont = SelectObject(hdc, default_font());
 	GetTextMetrics(hdc, &tm);
 	SelectObject(hdc, oldfont);
 	ReleaseDC(hWnd, hdc);
@@ -355,6 +355,8 @@ LRESULT CALLBACK EditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 0, 0, 0, 0,
 				hWnd, (HMENU)(IDC_ENABLE_CHANNEL_0 + i), hinstance, NULL);
 			SendMessage(b, BM_SETCHECK, chmask >> i & 1, 0);
+			// This font was set up earlier by the ebmused_order control
+			SendMessage(b, WM_SETFONT, order_font(), 0);
 		}
 		EditWndProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(hWnd, IDC_EDITBOX), GWLP_WNDPROC, (LONG_PTR)TrackEditWndProc);
 		break;
@@ -429,13 +431,13 @@ LRESULT CALLBACK EditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	case WM_SIZE:
 		editor_template.divy = HIWORD(lParam) - (font_height * 7 + 17);
 		move_controls(hWnd, &editor_template, lParam);
-		int start = 10 + GetSystemMetrics(SM_CXBORDER) + pos_width;
+		int start = scale_x(10) + GetSystemMetrics(SM_CXBORDER) + pos_width;
 		int right = start;
 		for (int i = 0; i < 8; i++) {
 			int left = right + 1;
 			right = start + (tracker_width * (i + 1) >> 3);
 			MoveWindow(GetDlgItem(hWnd, IDC_ENABLE_CHANNEL_0+i),
-				left, 40, right - left, 20, TRUE);
+				left, scale_y(40), right - left, scale_y(20), TRUE);
 		}
 		break;
 	default:
@@ -450,7 +452,7 @@ LRESULT CALLBACK OrderWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		hwndOrder = hWnd;
 		break;
 	case WM_LBUTTONDOWN: {
-		int pos = LOWORD(lParam) / 25;
+		int pos = LOWORD(lParam) / scale_x(25);
 		if (pos >= cur_song.order_length) break;
 		SetFocus(hWnd);
 		goto_order(pos);
@@ -477,12 +479,14 @@ LRESULT CALLBACK OrderWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 		break;
 	case WM_PAINT: {
 		HDC hdc = BeginPaint(hWnd, &ps);
+		SelectObject(hdc, order_font());
 		RECT rc;
 		GetClientRect(hWnd, &rc);
+		int order_width = scale_x(25);
 		for (int i = 0; i < cur_song.order_length; i++) {
 			char buf[6];
 			int len = sprintf(buf, "%d", cur_song.order[i]);
-			rc.right = rc.left + 25;
+			rc.right = rc.left + order_width;
 			COLORREF tc = 0, bc = 0;
 			if (i == pattop_state.ordnum) {
 				tc = SetTextColor(hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
@@ -827,7 +831,7 @@ static void cursor_to_xy(int x, int y, BOOL select) {
 //		int chan_xright = (tracker_width * (ch + 1) >> 3);
 
 		HDC hdc = GetDC(hwndTracker);
-		HFONT oldfont = SelectObject(hdc, hfont);
+		HFONT oldfont = SelectObject(hdc, default_font());
 
 		int target_pos = state.patpos + y * zoom / font_height;
 		pos = state.patpos + cs->next;
@@ -1367,9 +1371,10 @@ static HDC hdcState;
 static void show_state(int pos, const char *buf) {
 	static const WORD xt[] = { 20, 80, 180, 240, 300, 360 };
 	RECT rc;
-	rc.left = xt[pos >> 4];
+	int left = xt[pos >> 4];
+	rc.left = scale_x(left);
 	rc.top = (pos & 15) * font_height + 1;
-	rc.right = rc.left + 60;
+	rc.right = scale_x(left + 60);
 	rc.bottom = rc.top + font_height;
 	ExtTextOut(hdcState, rc.left, rc.top, ETO_OPAQUE, &rc, buf, strlen(buf), NULL);
 }
