@@ -57,6 +57,22 @@ static void sound_uninit() {
 	hwo = NULL;
 }
 
+static int do_envelope(struct channel_state *c, int mixing_rate) {
+	if (c->note_release != 0) {
+		if (c->inst_adsr1 & 0x1F)
+			c->env_height *= c->decay_rate;
+	} else {
+		// release takes about 15ms (not dependent on tempo)
+		c->env_height -= (32000 / 512.0) / mixing_rate;
+		if (c->env_height < 0) {
+			c->samp_pos = -1;
+			// key off
+			return 1;
+		}
+	}
+	return 0;
+}
+
 //DWORD cnt;
 
 static void fill_buffer() {
@@ -93,16 +109,8 @@ static void fill_buffer() {
 				continue;
 			}
 
-			if (c->note_release != 0) {
-				if (c->inst_adsr1 & 0x1F)
-					c->env_height *= c->decay_rate;
-			} else {
-				// release takes about 15ms (not dependent on tempo)
-				c->env_height -= (32000 / 512.0) / mixrate;
-				if (c->env_height < 0) {
-					c->samp_pos = -1;
-					continue;
-				}
+			if (do_envelope(c, mixrate) == 1) {
+				continue;
 			}
 			double volume = c->env_height / 128.0;
 
