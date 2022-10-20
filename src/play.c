@@ -74,9 +74,11 @@ void set_inst(struct song_state *st, struct channel_state *c, int inst) {
 	}
 
 	c->inst = inst;
-	c->inst_adsr1 = idata[2];
-	if (c->inst_adsr1 & 0x1F) {
-		int i = c->inst_adsr1 & 0x1F;
+	c->inst_adsr1 = idata[1];
+	c->inst_adsr2 = idata[2];
+	c->inst_gain = idata[3];
+	if (c->inst_adsr2 & 0x1F) {
+		int i = c->inst_adsr2 & 0x1F;
 		// calculate the constant to multiply envelope height by on each sample
 		int halflife;
 		if (i >= 30)
@@ -241,7 +243,8 @@ static void do_note(struct song_state *st, struct channel_state *c, int note) {
 
 		c->samp_pos = 0;
 		c->samp = &samp[spc[inst_base + 6*c->inst]];
-		c->env_height = 1;
+		c->env_height = 0;
+		c->env_state = ENV_STATE_ATTACK;
 
 		note &= 0x7F;
 		note += st->transpose + c->transpose;
@@ -319,8 +322,12 @@ void load_pattern() {
 }
 
 static void CF7(struct channel_state *c) {
-	if (c->note_release)
+	if (c->note_release) {
 		c->note_release--;
+	}
+	if (c->note_release == 0) {
+		c->env_state = ENV_STATE_KEY_OFF;
+	}
 
 	// 0D60
 	if (c->note.cycles) {

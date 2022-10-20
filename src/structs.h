@@ -57,6 +57,8 @@ struct song_state {
 
 		BYTE inst; // instrument
 		BYTE inst_adsr1;
+		BYTE inst_adsr2;
+		BYTE inst_gain;
 		BYTE finetune;
 		signed char transpose;
 		struct slider panning; BYTE pan_flags;
@@ -75,6 +77,12 @@ struct song_state {
 		struct sample *samp;
 		int samp_pos, note_freq;
 
+		enum envelope_state {
+			ENV_STATE_ATTACK,
+			ENV_STATE_DECAY,
+			ENV_STATE_SUSTAIN,
+			ENV_STATE_KEY_OFF
+		} env_state;
 		double env_height; // envelope height
 		double decay_rate;
 	} chan[16];

@@ -68,8 +68,10 @@ static void draw_square(int note, HBRUSH brush) {
 
 static void note_off(int note) {
 	for (int ch = 0; ch < 8; ch++)
-		if (state.chan[ch].samp_pos >= 0 && cnote[ch] == note)
+		if (state.chan[ch].samp_pos >= 0 && cnote[ch] == note) {
 			state.chan[ch].note_release = 0;
+			state.chan[ch].env_state = ENV_STATE_KEY_OFF;
+		}
 	draw_square(note, GetStockObject(WHITE_BRUSH));
 }
 
@@ -89,7 +91,8 @@ static void note_on(int note, int velocity) {
 	c->samp = &samp[spc[inst_base + 6*c->inst]];
 
 	c->note_release = 1;
-	c->env_height = 1;
+	c->env_height = 0;
+	c->env_state = ENV_STATE_ATTACK;
 	calc_freq(c, note << 8);
 	c->left_vol = c->right_vol = min(max(velocity, 0), 127);
 	draw_square(note, (HBRUSH)(COLOR_HIGHLIGHT + 1));

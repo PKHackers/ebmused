@@ -58,10 +58,32 @@ static void sound_uninit() {
 }
 
 static int do_envelope(struct channel_state *c, int mixing_rate) {
-	if (c->note_release != 0) {
-		if (c->inst_adsr1 & 0x1F)
+	switch (c->env_state) {
+	case ENV_STATE_ATTACK:
+		// TODO: replace 1 with attack step
+		c->env_height += 1;
+		if (c->env_height >= 0x7FF / 2048.0) {
+            c->env_height = 0x7FF / 2048.0;
+		}
+		if (c->env_height < 0x7E0 / 2048.0) {
+			break;
+		}
+		c->env_state = ENV_STATE_DECAY;
+		// fallthrough
+	case ENV_STATE_DECAY:
+		// TODO: calculate decay rate and check sustain level
+		c->env_height -= c->env_height * 0;
+		if (c->env_height > 1) {
+			break;
+		}
+		c->env_state = ENV_STATE_SUSTAIN;
+		// fallthrough
+	case ENV_STATE_SUSTAIN:
+		if (c->inst_adsr2 & 0x1F)
 			c->env_height *= c->decay_rate;
-	} else {
+		break;
+	case ENV_STATE_KEY_OFF:
+	default:
 		// release takes about 15ms (not dependent on tempo)
 		c->env_height -= (32000 / 512.0) / mixing_rate;
 		if (c->env_height < 0) {
@@ -109,11 +131,14 @@ static void fill_buffer() {
 				continue;
 			}
 
+			// Tick the envelope forward once and check if the note becomes
+			// completely silent
 			if (do_envelope(c, mixrate) == 1) {
 				continue;
 			}
 			double volume = c->env_height / 128.0;
 
+			// Linear interpolation
 			int s1 = s->data[ipos];
 			s1 += (s->data[ipos+1] - s1) * (c->samp_pos & 0x7FFF) >> 15;
 
