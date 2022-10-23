@@ -57,42 +57,67 @@ static void sound_uninit() {
 	hwo = NULL;
 }
 
-static int do_envelope(struct channel_state *c, int mixing_rate) {
-	switch (c->env_state) {
-	case ENV_STATE_ATTACK:
-		// TODO: replace 1 with attack step
-		c->env_height += 1;
-		if (c->env_height >= 0x7FF / 2048.0) {
-            c->env_height = 0x7FF / 2048.0;
-		}
-		if (c->env_height < 0x7E0 / 2048.0) {
+// Move the envelope forward enough SNES ticks to match one tick of ebmused.
+// Returns 1 if the note was keyed off as a result of calculating the envelope, or 0 otherwise.
+// Note that mixing_rate values near INT_MAX may result in undefined behavior. But no one should
+// be trying to play back 2 GHz audio anyway.
+static BOOL do_envelope(struct channel_state *c, int mixing_rate) {
+	BOOL hit_zero = FALSE;
+
+	// c->env_fractional_counter keeps track of accumulated error from running or
+	// not running the below loop. When it gets to be high enough, we run the
+	// loop again.
+	// Examples:
+	// If mixing_rate is 32000, this loop will run 1 time every function call.
+	// If mixing_rate is 16000, this loop will run 2 times every call.
+	// If mixing_rate is 64000, this loop will run 0/1 times every two calls.
+	// If mixing_rate is 48000, this loop will run 0/1/1 times every three calls.
+	c->env_fractional_counter += 32000;
+	while (c->env_fractional_counter >= mixing_rate && !hit_zero) {
+		++c->env_counter;
+		c->env_fractional_counter -= mixing_rate;
+
+		switch (c->env_state) {
+		case ENV_STATE_ATTACK:
+			if (c->env_counter >= c->attack_rate) {
+				c->env_counter = 0;
+				c->env_height += (c->attack_rate == 1) ? 1024 : 32;
+				if (c->env_height > 0x7FF) {
+					c->env_height = 0x7FF;
+				}
+				if (c->env_height >= 0x7E0) {
+					c->env_state = ENV_STATE_DECAY;
+				}
+			}
 			break;
-		}
-		c->env_state = ENV_STATE_DECAY;
-		// fallthrough
-	case ENV_STATE_DECAY:
-		// TODO: calculate decay rate and check sustain level
-		c->env_height -= c->env_height * 0;
-		if (c->env_height > 1) {
+		case ENV_STATE_DECAY:
+			if (c->env_counter >= c->decay_rate) {
+				c->env_counter = 0;
+				c->env_height -= ((c->env_height - 1) >> 8) + 1;
+			}
+			if (c->env_height <= c->sustain_level) {
+				c->env_state = ENV_STATE_SUSTAIN;
+			}
 			break;
-		}
-		c->env_state = ENV_STATE_SUSTAIN;
-		// fallthrough
-	case ENV_STATE_SUSTAIN:
-		if (c->inst_adsr2 & 0x1F)
-			c->env_height *= c->decay_rate;
-		break;
-	case ENV_STATE_KEY_OFF:
-	default:
-		// release takes about 15ms (not dependent on tempo)
-		c->env_height -= (32000 / 512.0) / mixing_rate;
-		if (c->env_height < 0) {
-			c->samp_pos = -1;
-			// key off
-			return 1;
+		case ENV_STATE_SUSTAIN:
+			if (c->sustain_rate != 0 && c->env_counter >= c->sustain_rate) {
+				c->env_counter = 0;
+				c->env_height -= ((c->env_height - 1) >> 8) + 1;
+			}
+			break;
+		case ENV_STATE_KEY_OFF:
+		default:
+			// "if (env_counter >= 1)" should always be true, because we just incremented it
+			// (1 being rates[31], the fixed rate used in the release phase)
+			c->env_counter = 0;
+			c->env_height -= 8;
+			if (c->env_height < 0) {
+				c->samp_pos = -1;
+				hit_zero = TRUE;
+			}
 		}
 	}
-	return 0;
+	return hit_zero;
 }
 
 //DWORD cnt;
@@ -133,17 +158,16 @@ static void fill_buffer() {
 
 			// Tick the envelope forward once and check if the note becomes
 			// completely silent
-			if (do_envelope(c, mixrate) == 1) {
+			if (do_envelope(c, mixrate)) {
 				continue;
 			}
-			double volume = c->env_height / 128.0;
 
 			// Linear interpolation
 			int s1 = s->data[ipos];
 			s1 += (s->data[ipos+1] - s1) * (c->samp_pos & 0x7FFF) >> 15;
 
-			left  += s1 * c->left_vol  * volume;
-			right += s1 * c->right_vol * volume;
+			left  += s1 * c->env_height / 0x800 * c->left_vol  / 128;
+			right += s1 * c->env_height / 0x800 * c->right_vol / 128;
 
 //			int sp = c->samp_pos;
 

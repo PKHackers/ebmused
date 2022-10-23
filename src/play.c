@@ -61,6 +61,12 @@ static void slide(struct slider *s) {
 }
 
 void set_inst(struct song_state *st, struct channel_state *c, int inst) {
+	static const short rates[32] = {
+		  0, 2048, 1536, 1280, 1024, 768, 640, 512,
+		384,  320,  256,  192,  160, 128,  96,  80,
+		 64,   48,   40,   32,   24,  20,  16,  12,
+		 10,    8,    6,    5,    4,   3,   2,   1
+	};
 	// CA and up is for instruments in the second pack (set with FA xx)
 	if (inst >= 0x80)
 		inst += st->first_CA_inst - 0xCA;
@@ -77,16 +83,10 @@ void set_inst(struct song_state *st, struct channel_state *c, int inst) {
 	c->inst_adsr1 = idata[1];
 	c->inst_adsr2 = idata[2];
 	c->inst_gain = idata[3];
-	if (c->inst_adsr2 & 0x1F) {
-		int i = c->inst_adsr2 & 0x1F;
-		// calculate the constant to multiply envelope height by on each sample
-		int halflife;
-		if (i >= 30)
-			halflife = 32 - i;
-		else
-			halflife = ((512 >> (i / 3)) * (5 - i % 3));
-		c->decay_rate = pow(2.0, -1.0/(0.0055 * halflife * mixrate));
-	}
+	c->attack_rate = rates[(c->inst_adsr1 & 0xF) * 2 + 1];
+	c->decay_rate = rates[((c->inst_adsr1 >> 4) & 7) * 2 + 16];
+	c->sustain_level = ((c->inst_adsr2 >> 5) & 7) * 0x100 + 0x100;
+	c->sustain_rate = rates[c->inst_adsr2 & 0x1F];
 }
 
 // calculate how far to advance the sample pointer on each output sample

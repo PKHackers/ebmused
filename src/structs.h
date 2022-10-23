@@ -83,8 +83,13 @@ struct song_state {
 			ENV_STATE_SUSTAIN,
 			ENV_STATE_KEY_OFF
 		} env_state;
-		double env_height; // envelope height
-		double decay_rate;
+		short env_height; // envelope height
+		unsigned short env_counter;
+		unsigned env_fractional_counter;
+		short attack_rate;
+		short decay_rate;
+		short sustain_level;
+		short sustain_rate;
 	} chan[16];
 	signed char transpose;
 	struct slider volume;
