@@ -244,7 +244,11 @@ static void do_note(struct song_state *st, struct channel_state *c, int note) {
 		c->samp_pos = 0;
 		c->samp = &samp[spc[inst_base + 6*c->inst]];
 		c->env_height = 0;
+		c->next_env_height = 0;
 		c->env_state = ENV_STATE_ATTACK;
+		c->next_env_state = ENV_STATE_ATTACK;
+		c->env_counter = 0;
+		c->env_fractional_counter = 0;
 
 		note &= 0x7F;
 		note += st->transpose + c->transpose;

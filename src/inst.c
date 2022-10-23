@@ -92,7 +92,11 @@ static void note_on(int note, int velocity) {
 
 	c->note_release = 1;
 	c->env_height = 0;
+	c->next_env_height = 0;
 	c->env_state = ENV_STATE_ATTACK;
+	c->next_env_state = ENV_STATE_ATTACK;
+	c->env_counter = 0;
+	c->env_fractional_counter = 0;
 	calc_freq(c, note << 8);
 	c->left_vol = c->right_vol = min(max(velocity, 0), 127);
 	draw_square(note, (HBRUSH)(COLOR_HIGHLIGHT + 1));

@@ -77,13 +77,19 @@ struct song_state {
 		struct sample *samp;
 		int samp_pos, note_freq;
 
+		// Envelope state for the current/previous 32 KHz tick...
 		enum envelope_state {
 			ENV_STATE_ATTACK,
 			ENV_STATE_DECAY,
 			ENV_STATE_SUSTAIN,
 			ENV_STATE_KEY_OFF
 		} env_state;
-		short env_height; // envelope height
+		// ...and for the next 32 KHz tick
+		enum envelope_state next_env_state;
+		// Envelope height for the current/previous 32 KHz tick...
+		short env_height;
+		// ...and for the next 32 KHz tick, for interpolation purposes
+		short next_env_height;
 		unsigned short env_counter;
 		unsigned env_fractional_counter;
 		short attack_rate;

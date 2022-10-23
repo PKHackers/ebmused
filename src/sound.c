@@ -76,33 +76,35 @@ static BOOL do_envelope(struct channel_state *c, int mixing_rate) {
 	while (c->env_fractional_counter >= mixing_rate && !hit_zero) {
 		++c->env_counter;
 		c->env_fractional_counter -= mixing_rate;
+		c->env_height = c->next_env_height;
+		c->env_state = c->next_env_state;
 
 		switch (c->env_state) {
 		case ENV_STATE_ATTACK:
 			if (c->env_counter >= c->attack_rate) {
 				c->env_counter = 0;
-				c->env_height += (c->attack_rate == 1) ? 1024 : 32;
-				if (c->env_height > 0x7FF) {
-					c->env_height = 0x7FF;
+				c->next_env_height = c->env_height + (c->attack_rate == 1 ? 1024 : 32);
+				if (c->next_env_height > 0x7FF) {
+					c->next_env_height = 0x7FF;
 				}
-				if (c->env_height >= 0x7E0) {
-					c->env_state = ENV_STATE_DECAY;
+				if (c->next_env_height >= 0x7E0) {
+					c->next_env_state = ENV_STATE_DECAY;
 				}
 			}
 			break;
 		case ENV_STATE_DECAY:
 			if (c->env_counter >= c->decay_rate) {
 				c->env_counter = 0;
-				c->env_height -= ((c->env_height - 1) >> 8) + 1;
+				c->next_env_height = c->env_height - ((c->env_height - 1) >> 8) + 1;
 			}
-			if (c->env_height <= c->sustain_level) {
-				c->env_state = ENV_STATE_SUSTAIN;
+			if (c->next_env_height <= c->sustain_level) {
+				c->next_env_state = ENV_STATE_SUSTAIN;
 			}
 			break;
 		case ENV_STATE_SUSTAIN:
 			if (c->sustain_rate != 0 && c->env_counter >= c->sustain_rate) {
 				c->env_counter = 0;
-				c->env_height -= ((c->env_height - 1) >> 8) + 1;
+				c->next_env_height = c->env_height - ((c->env_height - 1) >> 8) + 1;
 			}
 			break;
 		case ENV_STATE_KEY_OFF:
@@ -110,7 +112,8 @@ static BOOL do_envelope(struct channel_state *c, int mixing_rate) {
 			// "if (env_counter >= 1)" should always be true, because we just incremented it
 			// (1 being rates[31], the fixed rate used in the release phase)
 			c->env_counter = 0;
-			c->env_height -= 8;
+			c->next_env_height = c->env_height - 8;
+			// We want to check if the sample has *already* hit zero, not if it will next tick.
 			if (c->env_height < 0) {
 				c->samp_pos = -1;
 				hit_zero = TRUE;
@@ -162,10 +165,13 @@ static void fill_buffer() {
 				continue;
 			}
 
-			// Linear interpolation
+			// Linear interpolation between audio samples
 			int s1 = s->data[ipos];
 			s1 += (s->data[ipos+1] - s1) * (c->samp_pos & 0x7FFF) >> 15;
 
+			// Linear interpolation between envelope ticks
+			int env_height = c->env_height +
+                (c->next_env_height - c->env_height) * c->env_fractional_counter / mixrate;
 			left  += s1 * c->env_height / 0x800 * c->left_vol  / 128;
 			right += s1 * c->env_height / 0x800 * c->right_vol / 128;
 
