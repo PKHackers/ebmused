@@ -330,7 +330,7 @@ static void CF7(struct channel_state *c) {
 		c->note_release--;
 	}
 	if (c->note_release == 0) {
-		c->env_state = ENV_STATE_KEY_OFF;
+		c->next_env_state = ENV_STATE_KEY_OFF;
 	}
 
 	// 0D60

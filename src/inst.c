@@ -70,7 +70,7 @@ static void note_off(int note) {
 	for (int ch = 0; ch < 8; ch++)
 		if (state.chan[ch].samp_pos >= 0 && cnote[ch] == note) {
 			state.chan[ch].note_release = 0;
-			state.chan[ch].env_state = ENV_STATE_KEY_OFF;
+			state.chan[ch].next_env_state = ENV_STATE_KEY_OFF;
 		}
 	draw_square(note, GetStockObject(WHITE_BRUSH));
 }

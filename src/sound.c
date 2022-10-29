@@ -95,7 +95,7 @@ static BOOL do_envelope(struct channel_state *c, int mixing_rate) {
 		case ENV_STATE_DECAY:
 			if (c->env_counter >= c->decay_rate) {
 				c->env_counter = 0;
-				c->next_env_height = c->env_height - ((c->env_height - 1) >> 8) + 1;
+				c->next_env_height = c->env_height - (((c->env_height - 1) >> 8) + 1);
 			}
 			if (c->next_env_height <= c->sustain_level) {
 				c->next_env_state = ENV_STATE_SUSTAIN;
@@ -104,7 +104,7 @@ static BOOL do_envelope(struct channel_state *c, int mixing_rate) {
 		case ENV_STATE_SUSTAIN:
 			if (c->sustain_rate != 0 && c->env_counter >= c->sustain_rate) {
 				c->env_counter = 0;
-				c->next_env_height = c->env_height - ((c->env_height - 1) >> 8) + 1;
+				c->next_env_height = c->env_height - (((c->env_height - 1) >> 8) + 1);
 			}
 			break;
 		case ENV_STATE_KEY_OFF:
