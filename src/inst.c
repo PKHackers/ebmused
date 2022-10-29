@@ -91,10 +91,10 @@ static void note_on(int note, int velocity) {
 	c->samp = &samp[spc[inst_base + 6*c->inst]];
 
 	c->note_release = 1;
-	c->env_height = 0;
-	c->next_env_height = 0;
-	c->env_state = ENV_STATE_ATTACK;
-	c->next_env_state = ENV_STATE_ATTACK;
+	c->env_height = initial_env_height(c->inst_adsr1 & 0x80, c->inst_gain);
+	c->next_env_height = c->env_height;
+	c->env_state = (c->inst_adsr1 & 0x80) ? ENV_STATE_ATTACK : ENV_STATE_GAIN;
+	c->next_env_state = c->env_state;
 	c->env_counter = 0;
 	c->env_fractional_counter = 0;
 	calc_freq(c, note << 8);

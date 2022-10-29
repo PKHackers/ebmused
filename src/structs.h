@@ -82,7 +82,8 @@ struct song_state {
 			ENV_STATE_ATTACK,
 			ENV_STATE_DECAY,
 			ENV_STATE_SUSTAIN,
-			ENV_STATE_KEY_OFF
+			ENV_STATE_KEY_OFF,
+			ENV_STATE_GAIN
 		} env_state;
 		// ...and for the next 32 KHz tick
 		enum envelope_state next_env_state;
@@ -96,6 +97,7 @@ struct song_state {
 		short decay_rate;
 		short sustain_level;
 		short sustain_rate;
+		short gain_rate;
 	} chan[16];
 	signed char transpose;
 	struct slider volume;

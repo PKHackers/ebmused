@@ -87,6 +87,7 @@ void set_inst(struct song_state *st, struct channel_state *c, int inst) {
 	c->decay_rate = rates[((c->inst_adsr1 >> 4) & 7) * 2 + 16];
 	c->sustain_level = ((c->inst_adsr2 >> 5) & 7) * 0x100 + 0x100;
 	c->sustain_rate = rates[c->inst_adsr2 & 0x1F];
+	c->gain_rate = rates[c->inst_gain & 0x1F];
 }
 
 // calculate how far to advance the sample pointer on each output sample
@@ -226,6 +227,13 @@ static void do_command(struct song_state *st, struct channel_state *c) {
 	}
 }
 
+short initial_env_height(BOOL adsr_on, unsigned char gain) {
+	if (adsr_on || (gain & 0x80))
+		return 0;
+	else
+		return (gain & 0x7F) * 16 / 0x800;
+}
+
 // $0654 + $08D4-$8EF
 static void do_note(struct song_state *st, struct channel_state *c, int note) {
 	// using >=CA as a note switches to that instrument and plays note A4
@@ -243,10 +251,10 @@ static void do_note(struct song_state *st, struct channel_state *c, int note) {
 
 		c->samp_pos = 0;
 		c->samp = &samp[spc[inst_base + 6*c->inst]];
-		c->env_height = 0;
-		c->next_env_height = 0;
-		c->env_state = ENV_STATE_ATTACK;
-		c->next_env_state = ENV_STATE_ATTACK;
+		c->env_height = initial_env_height(c->inst_adsr1 & 0x80, c->inst_gain);
+		c->next_env_height = c->env_height;
+		c->env_state = (c->inst_adsr1 & 0x80) ? ENV_STATE_ATTACK : ENV_STATE_GAIN;
+		c->next_env_state = c->env_state;
 		c->env_counter = 0;
 		c->env_fractional_counter = 0;
 

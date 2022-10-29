@@ -118,6 +118,34 @@ static BOOL do_envelope(struct channel_state *c, int mixing_rate) {
 				c->samp_pos = -1;
 				hit_zero = TRUE;
 			}
+		case ENV_STATE_GAIN:
+			if (c->gain_rate != 0 && c->env_counter >= c->gain_rate) {
+				c->env_counter = 0;
+				// There is no work to do for direct gain -- the current level
+				// is sustained, and c->next_env_height should already equal it
+				if (c->inst_gain & 0x80) {
+					switch ((c->inst_gain >> 5) & 3) {
+					case 0: // Linear decrease
+					case 1: // Exponential decrease
+						// Unimplemented
+						c->samp_pos = -1;
+						hit_zero = TRUE;
+						break;
+					case 2: // Linear increase
+						c->next_env_height = c->env_height + 32;
+						break;
+					case 3: // Bent increase
+						c->next_env_height = (c->env_height < 0x600) ? c->env_height + 32 : c->env_height + 8;
+						break;
+					}
+
+					if (c->next_env_height > 0x7FF) {
+						c->next_env_height = 0x7FF;
+					} else if (c->next_env_height < 0) {
+						c->next_env_height = 0;
+					}
+				}
+			}
 		}
 	}
 	return hit_zero;
