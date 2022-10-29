@@ -12,8 +12,9 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-g" />
 					<Add option="-Og" />
+					<Add option="-g" />
+					<Add option="-Werror=vla" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -23,6 +24,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-Werror=vla" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
