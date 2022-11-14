@@ -227,11 +227,20 @@ static void do_command(struct song_state *st, struct channel_state *c) {
 	}
 }
 
-short initial_env_height(BOOL adsr_on, unsigned char gain) {
+static short initial_env_height(BOOL adsr_on, unsigned char gain) {
 	if (adsr_on || (gain & 0x80))
 		return 0;
 	else
 		return (gain & 0x7F) * 16 / 0x800;
+}
+
+void initialize_envelope(struct channel_state *c) {
+	c->env_height = initial_env_height(c->inst_adsr1 & 0x80, c->inst_gain);
+	c->next_env_height = c->env_height;
+	c->env_state = (c->inst_adsr1 & 0x80) ? ENV_STATE_ATTACK : ENV_STATE_GAIN;
+	c->next_env_state = c->env_state;
+	c->env_counter = 0;
+	c->env_fractional_counter = 0;
 }
 
 // $0654 + $08D4-$8EF
@@ -251,12 +260,7 @@ static void do_note(struct song_state *st, struct channel_state *c, int note) {
 
 		c->samp_pos = 0;
 		c->samp = &samp[spc[inst_base + 6*c->inst]];
-		c->env_height = initial_env_height(c->inst_adsr1 & 0x80, c->inst_gain);
-		c->next_env_height = c->env_height;
-		c->env_state = (c->inst_adsr1 & 0x80) ? ENV_STATE_ATTACK : ENV_STATE_GAIN;
-		c->next_env_state = c->env_state;
-		c->env_counter = 0;
-		c->env_fractional_counter = 0;
+		initialize_envelope(c);
 
 		note &= 0x7F;
 		note += st->transpose + c->transpose;

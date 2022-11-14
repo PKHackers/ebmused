@@ -199,7 +199,7 @@ static void fill_buffer() {
 
 			// Linear interpolation between envelope ticks
 			int env_height = c->env_height +
-                (c->next_env_height - c->env_height) * c->env_fractional_counter / mixrate;
+			    (c->next_env_height - c->env_height) * c->env_fractional_counter / mixrate;
 			left  += s1 * c->env_height / 0x800 * c->left_vol  / 128;
 			right += s1 * c->env_height / 0x800 * c->right_vol / 128;
 
