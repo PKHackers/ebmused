@@ -528,6 +528,7 @@ void initialize_state() {
 		state.chan[i].volume.cur = 0xFF00;
 		state.chan[i].panning.cur = 0x0A00;
 		state.chan[i].samp_pos = -1;
+		set_inst(&state, &state.chan[i], 0);
 	}
 	state.volume.cur = 0xC000;
 	state.tempo.cur = 0x2000;
