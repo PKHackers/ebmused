@@ -36,7 +36,7 @@ static struct window_template inst_list_template = {
 	inst_list_template_num, inst_list_template_lower, 0, 0, inst_list_controls
 };
 
-static unsigned char valid_insts[64];
+static unsigned char valid_insts[MAX_INSTRUMENTS];
 static int cnote[8];
 
 int note_from_key(int key, BOOL shift) {
@@ -68,8 +68,10 @@ static void draw_square(int note, HBRUSH brush) {
 
 static void note_off(int note) {
 	for (int ch = 0; ch < 8; ch++)
-		if (state.chan[ch].samp_pos >= 0 && cnote[ch] == note)
+		if (state.chan[ch].samp_pos >= 0 && cnote[ch] == note) {
 			state.chan[ch].note_release = 0;
+			state.chan[ch].next_env_state = ENV_STATE_KEY_OFF;
+		}
 	draw_square(note, GetStockObject(WHITE_BRUSH));
 }
 
@@ -89,7 +91,7 @@ static void note_on(int note, int velocity) {
 	c->samp = &samp[spc[inst_base + 6*c->inst]];
 
 	c->note_release = 1;
-	c->env_height = 1;
+	initialize_envelope(c);
 	calc_freq(c, note << 8);
 	c->left_vol = c->right_vol = min(max(velocity, 0), 127);
 	draw_square(note, (HBRUSH)(COLOR_HIGHLIGHT + 1));
@@ -208,9 +210,11 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		}
 
 		unsigned char *p = valid_insts;
-		for (int i = 0; i < 64; i++) { //filling out the Instrument Config ListBox
+		for (int i = 0; i < MAX_INSTRUMENTS; i++) { //filling out the Instrument Config ListBox
 			unsigned char *inst = &spc[inst_base + i*6];
-			if (inst[4] == 0 && inst[5] == 0) continue;
+			if (!samp[inst[0]].data
+				|| inst[0] >= 128
+				|| (inst[4] == 0 && inst[5] == 0)) continue;
 			//            Index ADSR            Tuning
 			sprintf(buf, "%02X: %02X %02X %02X  %02X%02X",
 				inst[0], inst[1], inst[2], inst[3], inst[4], inst[5]);

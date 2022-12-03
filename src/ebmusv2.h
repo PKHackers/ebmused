@@ -21,6 +21,7 @@
 #define WM_SONG_LOADED WM_USER+3
 #define WM_SONG_NOT_LOADED WM_USER+4
 #define WM_PACKS_SAVED WM_USER+5
+#define MAX_INSTRUMENTS 128
 
 // main.c
 extern BYTE packs_loaded[3];
@@ -110,6 +111,7 @@ extern BYTE spc[65536];
 extern int inst_base;
 void set_inst(struct song_state *st, struct channel_state *c, int inst);
 void calc_freq(struct channel_state *c, int note16);
+void initialize_envelope(struct channel_state *c);
 void load_pattern(void);
 BOOL do_cycle_no_sound(struct song_state *st);
 BOOL do_timer(void);

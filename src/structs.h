@@ -57,6 +57,8 @@ struct song_state {
 
 		BYTE inst; // instrument
 		BYTE inst_adsr1;
+		BYTE inst_adsr2;
+		BYTE inst_gain;
 		BYTE finetune;
 		signed char transpose;
 		struct slider panning; BYTE pan_flags;
@@ -75,8 +77,27 @@ struct song_state {
 		struct sample *samp;
 		int samp_pos, note_freq;
 
-		double env_height; // envelope height
-		double decay_rate;
+		// Envelope state for the current/previous 32 KHz tick...
+		enum envelope_state {
+			ENV_STATE_ATTACK,
+			ENV_STATE_DECAY,
+			ENV_STATE_SUSTAIN,
+			ENV_STATE_KEY_OFF,
+			ENV_STATE_GAIN
+		} env_state;
+		// ...and for the next 32 KHz tick
+		enum envelope_state next_env_state;
+		// Envelope height for the current/previous 32 KHz tick...
+		short env_height;
+		// ...and for the next 32 KHz tick, for interpolation purposes
+		short next_env_height;
+		unsigned short env_counter;
+		unsigned env_fractional_counter;
+		short attack_rate;
+		short decay_rate;
+		short sustain_level;
+		short sustain_rate;
+		short gain_rate;
 	} chan[16];
 	signed char transpose;
 	struct slider volume;
