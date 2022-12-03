@@ -90,7 +90,7 @@ void set_inst(struct song_state *st, struct channel_state *c, int inst) {
 // calculate how far to advance the sample pointer on each output sample
 void calc_freq(struct channel_state *c, int note16) {
 	static const WORD note_freq_table[] = {
-		0x085F, 0x08DF, 0x0965, 0x09F4, 0x0A8C, 0x0B2C, 0x0BD6, 0x0C8B,
+		0x085F, 0x08DE, 0x0965, 0x09F4, 0x0A8C, 0x0B2C, 0x0BD6, 0x0C8B,
 		0x0D4A, 0x0E14, 0x0EEA, 0x0FCD, 0x10BE
 	};
 
