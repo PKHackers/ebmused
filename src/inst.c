@@ -212,7 +212,9 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		unsigned char *p = valid_insts;
 		for (int i = 0; i < MAX_INSTRUMENTS; i++) { //filling out the Instrument Config ListBox
 			unsigned char *inst = &spc[inst_base + i*6];
-			if (inst[4] == 0 && inst[5] == 0) continue;
+			if (!samp[inst[0]].data
+				|| inst[0] >= 128
+				|| (inst[4] == 0 && inst[5] == 0)) continue;
 			//            Index ADSR            Tuning
 			sprintf(buf, "%02X: %02X %02X %02X  %02X%02X",
 				inst[0], inst[1], inst[2], inst[3], inst[4], inst[5]);
