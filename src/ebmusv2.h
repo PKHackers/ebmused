@@ -21,6 +21,7 @@
 #define WM_SONG_LOADED WM_USER+3
 #define WM_SONG_NOT_LOADED WM_USER+4
 #define WM_PACKS_SAVED WM_USER+5
+#define MAX_INSTRUMENTS 128
 
 // main.c
 extern BYTE packs_loaded[3];

@@ -36,7 +36,7 @@ static struct window_template inst_list_template = {
 	inst_list_template_num, inst_list_template_lower, 0, 0, inst_list_controls
 };
 
-static unsigned char valid_insts[64];
+static unsigned char valid_insts[MAX_INSTRUMENTS];
 static int cnote[8];
 
 int note_from_key(int key, BOOL shift) {
@@ -210,7 +210,7 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		}
 
 		unsigned char *p = valid_insts;
-		for (int i = 0; i < 64; i++) { //filling out the Instrument Config ListBox
+		for (int i = 0; i < MAX_INSTRUMENTS; i++) { //filling out the Instrument Config ListBox
 			unsigned char *inst = &spc[inst_base + i*6];
 			if (inst[4] == 0 && inst[5] == 0) continue;
 			//            Index ADSR            Tuning
