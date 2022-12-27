@@ -244,7 +244,7 @@ write_error:	MessageBox2(strerror(errno), "Save", MB_ICONERROR);
 				break;
 			}
 			memcpy(&pack_used[selected_bgm], new_pack_used, 3);
-			fseek(rom, SONG_POINTER_TABLE + rom_offset + 2 * selected_bgm, SEEK_SET);
+			fseek(rom, song_pointer_table_offset + 2 * selected_bgm, SEEK_SET);
 			if (!fwrite(&new_spc_address, 2, 1, rom))
 				goto write_error;
 			song_address[selected_bgm] = new_spc_address;
