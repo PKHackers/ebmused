@@ -10,7 +10,9 @@
 #define NUM_PACKS 0xA9
 #define BGM_PACK_TABLE 0x4F70A
 #define PACK_POINTER_TABLE 0x4F947
-#define SONG_POINTER_TABLE 0x26298C
+// This value is now determined dynamically based on the location of pack 1.
+// See song_pointer_table_offset.
+// #define SONG_POINTER_TABLE 0x26298C
 
 // other constants and stuff
 #define MAX_TITLE_LEN 60
@@ -123,6 +125,7 @@ extern FILE *rom;
 #endif
 extern int rom_size;
 extern int rom_offset;
+extern int song_pointer_table_offset;
 extern char *rom_filename;
 extern unsigned char pack_used[NUM_SONGS][3];
 extern unsigned short song_address[NUM_SONGS];
