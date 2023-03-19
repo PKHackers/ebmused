@@ -36,4 +36,8 @@ $(DEBUG_O_DIR)/%.o: %.c | $(DEBUG_O_DIR)
 	windres $< -o $@
 
 %/$(OBJ_DIR):
-	mkdir $(subst /,\,$@)
+	mkdir $(subst /,\,$(BUILD_DIR))
+	mkdir $(subst /,\,$(DEBUG_DIR))
+	mkdir $(subst /,\,$(DEBUG_O_DIR))
+	mkdir $(subst /,\,$(RELEASE_DIR))
+	mkdir $(subst /,\,$(RELEASE_O_DIR))
