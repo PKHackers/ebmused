@@ -1,0 +1,33 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "Build ebmused Release (mingw32-make)",
+			"command": "mingw32-make.exe",
+			"options": {
+				"cwd": "${workspaceFolder}\\src"
+			},
+			"problemMatcher": "$gcc",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "Compiles ebmused via running make in /src"
+		},
+		{
+			"type": "shell",
+			"label": "Build ebmused Debug (mingw32-make)",
+			"command": "mingw32-make.exe debug",
+			"options": {
+				"cwd": "${workspaceFolder}\\src"
+			},
+			"problemMatcher": "$gcc",
+			"group": {
+				"kind": "build",
+				"isDefault": false
+			},
+			"detail": "Compiles ebmused via running make in /src"
+		}
+	]
+}
