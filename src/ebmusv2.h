@@ -59,7 +59,7 @@ void free_samples(void);
 
 // ctrltbl.c
 struct control_desc {
-    // Window class (a class atom or class name; the first argument to CreateWindow)
+	// Window class (a class atom or class name; the first argument to CreateWindow)
 	const char *class;
 	// Position and dimensions in parent window (in pixels, before DPI scaling)
 	// Negative x and y are positioned relative to the right edge of the parent window
@@ -78,7 +78,7 @@ struct control_desc {
 	DWORD style;
 };
 struct window_template {
-    // Number of elements in `controls`
+	// Number of elements in `controls`
 	int num;
 	// How many elements of `controls` take up the area below divy (usually equal to `num`)
 	int lower;

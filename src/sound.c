@@ -34,7 +34,7 @@ int sound_init() {
 
 	int error = waveOutOpen(&hwo, WAVE_MAPPER, &wfx, (DWORD_PTR)hwndMain, 0, CALLBACK_WINDOW);
 	if (error) {
-	    char buf[60];
+		char buf[60];
 		sprintf(buf, "waveOut device could not be opened (%d)", error);
 		MessageBox2(buf, NULL, MB_ICONERROR);
 		return 0;
@@ -199,7 +199,7 @@ static void fill_buffer() {
 
 			// Linear interpolation between envelope ticks
 			int env_height = c->env_height +
-			    (c->next_env_height - c->env_height) * c->env_fractional_counter / mixrate;
+				(c->next_env_height - c->env_height) * c->env_fractional_counter / mixrate;
 			left  += s1 * c->env_height / 0x800 * c->left_vol  / 128;
 			right += s1 * c->env_height / 0x800 * c->right_vol / 128;
 

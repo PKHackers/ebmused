@@ -607,7 +607,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			item.pszText = tab_name[i];
 			(void)TabCtrl_InsertItem(tabs, i, &item);
 		}
-        SendMessage(tabs, WM_SETFONT, tabs_font(), TRUE);
+		SendMessage(tabs, WM_SETFONT, tabs_font(), TRUE);
 		break;
 	}
 	case WM_SIZE: {

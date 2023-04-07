@@ -723,7 +723,7 @@ static BOOL cursor_home(BOOL select) {
 				return FALSE;
 			}
 		} while (cursor.sub_ret != target.sub_ret
-		      || cursor.sub_count != target.sub_count);
+			|| cursor.sub_count != target.sub_count);
 	} else {
 		// Go to the top of the track
 		if (cursor.ptr == pattop_state.chan[cursor_chan].ptr)
@@ -748,8 +748,8 @@ static BOOL cursor_back(BOOL select) {
 		prev = cursor;
 		if (!cursor_fwd(select)) break;
 	} while (cursor.ptr != target.ptr
-	      || cursor.sub_ret != target.sub_ret
-	      || cursor.sub_count != target.sub_count);
+		|| cursor.sub_ret != target.sub_ret
+		|| cursor.sub_count != target.sub_count);
 	cursor_pos = prev_pos;
 	cursor = prev;
 	return TRUE;
@@ -783,8 +783,8 @@ static BOOL cursor_up(BOOL select) {
 			}
 			if (!cursor_fwd(select)) break;
 		} while (cursor.ptr != target.ptr
-		      || cursor.sub_ret != target.sub_ret
-		      || cursor.sub_count != target.sub_count);
+			|| cursor.sub_ret != target.sub_ret
+			|| cursor.sub_count != target.sub_count);
 	} else {
 		// find previous start-of-line code
 		BOOL at_start = TRUE;
@@ -798,8 +798,8 @@ static BOOL cursor_up(BOOL select) {
 			}
 			if (!cursor_fwd(select)) break;
 		} while (cursor.ptr != target.ptr
-		      || cursor.sub_ret != target.sub_ret
-		      || cursor.sub_count != target.sub_count);
+			|| cursor.sub_ret != target.sub_ret
+			|| cursor.sub_count != target.sub_count);
 	}
 	if (prev.ptr == NULL)
 		return FALSE;
