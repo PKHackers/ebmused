@@ -177,6 +177,7 @@ static void cursor_moved(BOOL select) {
 		int esel_end = esel_start + text_length(sel_start, sel_end) - 1;
 		SendDlgItemMessage(hwndEditor, IDC_EDITBOX, EM_SETSEL, esel_start, esel_end);
 		SendDlgItemMessage(hwndEditor, IDC_EDITBOX, EM_SCROLLCARET, 0, 0);
+		set_code_tip_status(cursor.ptr);
 	}
 	InvalidateRect(hwndTracker, NULL, FALSE);
 }
@@ -975,6 +976,7 @@ static void updateOrInsertDuration(BYTE(*callback)(BYTE, int), int durationOrOff
 				*cursor.ptr = duration;
 				cur_song.changed = TRUE;
 				InvalidateRect(hwndTracker, NULL, FALSE);
+				set_code_tip_status(cursor.ptr);
 			}
 		}
 		else

@@ -1,5 +1,6 @@
 #define IDM_MENU 1
 #define IDM_CONTEXTMENU 2
+#define IDS_STATUS 3
 #define ID_OPEN 100
 #define ID_SAVE_ALL 101
 #define ID_CLOSE 102

@@ -1,4 +1,4 @@
-SRCS = bgmlist.c brr.c ctrltbl.c help.c inst.c loadrom.c main.c metadata.c midi.c misc.c packlist.c packs.c parser.c play.c ranges.c resource.c song.c songed.c sound.c text.c tracker.c
+SRCS = bgmlist.c brr.c ctrltbl.c help.c inst.c loadrom.c main.c metadata.c midi.c misc.c packlist.c packs.c parser.c play.c ranges.c resource.c song.c songed.c sound.c text.c tracker.c status.c
 
 BUILD_DIR = ../build
 RELEASE_DIR = $(BUILD_DIR)/release

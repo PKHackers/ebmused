@@ -35,6 +35,7 @@ extern struct song cur_song;
 extern struct song_state pattop_state, state;
 extern HINSTANCE hinstance;
 extern HWND hwndMain;
+extern HWND hwndStatus;
 #ifdef CreateWindow
 extern HMENU hmenu, hcontextmenu;
 #endif
@@ -238,3 +239,6 @@ extern HWND hwndTracker;
 void tracker_scrolled(void);
 void load_pattern_into_tracker(void);
 void editor_command(int id);
+
+// status.c
+void set_code_tip_status(BYTE *code);

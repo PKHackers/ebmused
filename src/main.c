@@ -27,6 +27,7 @@ enum {
 	MAIN_WINDOW_HEIGHT = 540,
 	TAB_CONTROL_WIDTH = 600,
 	TAB_CONTROL_HEIGHT = 25,
+	STATUS_WINDOW_HEIGHT = 24,
 	CODELIST_WINDOW_WIDTH = 640,
 	CODELIST_WINDOW_HEIGHT = 480
 };
@@ -39,6 +40,7 @@ int octave = 2;
 int midiDevice = -1;
 HINSTANCE hinstance;
 HWND hwndMain;
+HWND hwndStatus;
 HMENU hmenu, hcontextmenu;
 HWND tab_hwnd[NUM_TABS];
 
@@ -108,7 +110,7 @@ static void tab_selected(int new) {
 	GetClientRect(hwndMain, &rc);
 	tab_hwnd[new] = CreateWindow(tab_class[new], NULL,
 		WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
-		0, scale_y(25), rc.right, rc.bottom - scale_y(25),
+		0, scale_y(TAB_CONTROL_HEIGHT), rc.right, rc.bottom - scale_y(TAB_CONTROL_HEIGHT + STATUS_WINDOW_HEIGHT),
 		hwndMain, NULL, hinstance, NULL);
 
 	SendMessage(tab_hwnd[new], rom ? WM_ROM_OPENED : WM_ROM_CLOSED, 0, 0);
@@ -610,7 +612,9 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 	case WM_SIZE: {
 		int tabs_height = scale_y(TAB_CONTROL_HEIGHT);
-		MoveWindow(tab_hwnd[current_tab], 0, tabs_height, LOWORD(lParam), HIWORD(lParam) - tabs_height, TRUE);
+		int status_height = scale_y(STATUS_WINDOW_HEIGHT);
+		MoveWindow(tab_hwnd[current_tab], 0, tabs_height, LOWORD(lParam), HIWORD(lParam) - tabs_height - status_height, TRUE);
+		SendMessage(hwndStatus, uMsg, wParam, lParam);
 		break;
 	}
 	case WM_COMMAND: {
@@ -784,6 +788,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
 		CW_USEDEFAULT, CW_USEDEFAULT, scale_x(MAIN_WINDOW_WIDTH), scale_y(MAIN_WINDOW_HEIGHT),
 		NULL, NULL, hInstance, NULL);
+	hwndStatus = CreateStatusWindow(WS_CHILD | WS_VISIBLE, NULL, hwndMain, IDS_STATUS);
 	ShowWindow(hwndMain, nCmdShow);
 
 	hmenu = GetMenu(hwndMain);
