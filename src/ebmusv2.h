@@ -241,4 +241,5 @@ void load_pattern_into_tracker(void);
 void editor_command(int id);
 
 // status.c
-void set_code_tip_status(BYTE *code);
+void format_status(int part, const char* format, ...);
+void set_code_tip_status(int part, BYTE *code);
