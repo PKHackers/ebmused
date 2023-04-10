@@ -6,19 +6,21 @@
 #include <stdarg.h>
 
 void format_status(int part, const char* format, ...) {
-	va_list args;
-	va_start(args, format);
-	int size = vsnprintf(0, 0, format, args);
-	va_end(args);
+	if (hwndStatus) {
+		va_list args;
+		va_start(args, format);
+		int size = vsnprintf(0, 0, format, args);
+		va_end(args);
 
-	char *buf = malloc(size + 1);
-	va_start(args, format);
-	vsprintf(buf, format, args);
-	va_end(args);
-	
-	SendMessage(hwndStatus, SB_SETTEXT, part, (LPARAM)buf);
+		char *buf = malloc(size + 1);
+		va_start(args, format);
+		vsprintf(buf, format, args);
+		va_end(args);
+		
+		SendMessage(hwndStatus, SB_SETTEXT, part, (LPARAM)buf);
 
-	free(buf);
+		free(buf);
+	}
 }
 
 static const char* notes[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };

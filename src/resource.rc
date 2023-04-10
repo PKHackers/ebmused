@@ -59,6 +59,7 @@ BEGIN
 	BEGIN
 		MENUITEM "Zoom &In\tCtrl+=", ID_ZOOM_IN, GRAYED
 		MENUITEM "Zoom &Out\tCtrl+-", ID_ZOOM_OUT, GRAYED
+		MENUITEM "&Status Bar", ID_STATUS_BAR, CHECKED
 	END
 	POPUP "O&ctave"
 	BEGIN

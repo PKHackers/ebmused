@@ -33,6 +33,7 @@
 #define ID_CLEAR_SONG 133
 #define ID_ZOOM_IN 140
 #define ID_ZOOM_OUT 141
+#define ID_STATUS_BAR 142
 #define ID_OCTAVE_1 150
 #define ID_HELP 160
 #define ID_ABOUT 161
