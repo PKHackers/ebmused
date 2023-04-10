@@ -241,5 +241,8 @@ void load_pattern_into_tracker(void);
 void editor_command(int id);
 
 // status.c
+#ifdef __GNUC__
+	__attribute__ ((format (gnu_printf, 2, 3)))
+#endif
 void format_status(int part, const char* format, ...);
 void set_tracker_status(int part, BYTE *code);
