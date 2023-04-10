@@ -178,7 +178,7 @@ static void cursor_moved(BOOL select) {
 		int esel_end = esel_start + text_length(sel_start, sel_end) - 1;
 		SendDlgItemMessage(hwndEditor, IDC_EDITBOX, EM_SETSEL, esel_start, esel_end);
 		SendDlgItemMessage(hwndEditor, IDC_EDITBOX, EM_SCROLLCARET, 0, 0);
-		set_code_tip_status(1, cursor.ptr);
+		set_tracker_status(0, cursor.ptr);
 	}
 	InvalidateRect(hwndTracker, NULL, FALSE);
 }
@@ -361,7 +361,6 @@ LRESULT CALLBACK EditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			SendMessage(b, WM_SETFONT, order_font(), 0);
 		}
 		EditWndProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(hWnd, IDC_EDITBOX), GWLP_WNDPROC, (LONG_PTR)TrackEditWndProc);
-		SendMessage(hwndStatus, SB_SETPARTS, 2, (LPARAM)(int[]){ 450, -1 });
 		break;
 	case WM_SONG_IMPORTED:
 	case WM_SONG_LOADED:
@@ -385,7 +384,6 @@ LRESULT CALLBACK EditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	case WM_DESTROY:
 		save_cur_song_to_pack();
 		enable_menu_items(editor_menu_cmds, MF_GRAYED);
-		SendMessage(hwndStatus, SB_SETPARTS, 1, (LPARAM)(int[]){ -1 });
 		break;
 	case WM_COMMAND: {
 		int id = LOWORD(wParam);
@@ -979,7 +977,7 @@ static void updateOrInsertDuration(BYTE(*callback)(BYTE, int), int durationOrOff
 				*cursor.ptr = duration;
 				cur_song.changed = TRUE;
 				InvalidateRect(hwndTracker, NULL, FALSE);
-				set_code_tip_status(1, cursor.ptr);
+				set_tracker_status(0, cursor.ptr);
 			}
 		}
 		else

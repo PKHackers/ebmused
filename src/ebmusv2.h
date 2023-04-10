@@ -242,4 +242,4 @@ void editor_command(int id);
 
 // status.c
 void format_status(int part, const char* format, ...);
-void set_code_tip_status(int part, BYTE *code);
+void set_tracker_status(int part, BYTE *code);
