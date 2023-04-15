@@ -60,8 +60,8 @@ void set_tracker_status(int p, BYTE *code) {
 			case 0xE6: format_status(p, "Master volume (duration: %d, volume: %d/255)", code[1], code[2]); break;
 			case 0xE7: format_status(p, "Tempo %d", code[1]); break;
 			case 0xE8: format_status(p, "Tempo (duration: %d, tempo: %d)", code[1], code[2]); break;
-			case 0xE9: format_status(p, "Global transpose %hhd", code[1]); break;
-			case 0xEA: format_status(p, "Channel transpose %hhd", code[1]); break;
+			case 0xE9: format_status(p, "Global transpose %d", (signed char)code[1]); break;
+			case 0xEA: format_status(p, "Channel transpose %d", (signed char)code[1]); break;
 			case 0xEB: format_status(p, "Enable tremolo (delay: %d, freq: %d, amp: %d)", code[1], code[2], code[3]); break;
 			case 0xEC: format_status(p, "Disable tremolo"); break;
 			case 0xED: format_status(p, "Channel volume %d/255", code[1]); break;
@@ -88,10 +88,11 @@ void set_tracker_status(int p, BYTE *code) {
 			case 0xF6: format_status(p, "Disable echo"); break;
 			case 0xF7: format_status(p, "Echo settings (delay: %d, feedback: %d, filter: %d)", code[1], code[2], code[3]); break;
 			case 0xF8: format_status(p, "Echo volume (delay: %d, left volume: %d, right volume: %d)", code[1], code[2], code[3]); break;
-			case 0xF9: 
+			case 0xF9: {
 				BYTE note = (code[3] & 0x7F);
 				format_status(p, "Pitch bend (delay: %d, duration: %d, note: %s%c)", code[1], code[2], notes[note%12], '1' + note / 12);
 				break;
+			}
 			case 0xFA: format_status(p, "Base percussion instrument %d", code[1]); break;
 			case 0xFB: format_status(p, "Unknown [FB %02X %02X]", code[1], code[2]); break;
 			case 0xFC: format_status(p, "Mute channel (DEBUG)"); break;
