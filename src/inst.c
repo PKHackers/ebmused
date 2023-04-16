@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <mmsystem.h>
+#include <commctrl.h>
 #include "ebmusv2.h"
 
 #define IDC_SAMPLIST_CAPTION 1
@@ -21,11 +22,11 @@ static int selectedInstrument = 0;
 static const struct control_desc inst_list_controls[] = {
 	{ "Static",  10, 10,100, 20, "Sample Directory:", 0, 0 },
 	{ "Static",  13, 30,180, 20, "    Strt Loop Size", 1, 0 },
-	{ "ListBox", 10, 50,180,-60, NULL, 2, WS_BORDER | WS_VSCROLL }, //Sample Directory ListBox
+	{ "ListBox", 10, 50,180,-60, NULL, IDC_SAMPLIST, WS_BORDER | WS_VSCROLL }, //Sample Directory ListBox
 
 	{ "Static", 200, 10,100, 20, "Instrument Config:", 0, 0 },
 	{ "Static", 203, 30,160, 20, "S#  ADSR/Gain Tuning", 3, 0 },
-	{ "ListBox",200, 50,180,-60, NULL, 4, WS_BORDER | WS_VSCROLL }, //Instrument Config ListBox
+	{ "ListBox",200, 50,180,-60, NULL, IDC_INSTLIST, WS_BORDER | LBS_NOTIFY | WS_VSCROLL }, //Instrument Config ListBox
 
 	{ "Static", 400, 10,100, 20, "Instrument test:", 0, 0},
 	{ "ebmused_insttest",400, 30,140,260, NULL, 3, 0 },
@@ -131,14 +132,15 @@ static LRESULT CALLBACK InstListWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 		int note = note_from_key(wParam, FALSE);
 		if (note >= 0 && note < 0x48)
 			note_on(note, 24);
-	}
-	if (uMsg == WM_KEYUP) {
+	} else if (uMsg == WM_KEYUP) {
 		int note = note_from_key(wParam, FALSE);
 		if (note >= 0 && note < 0x48)
 			note_off(note);
 	}
 	// so pressing 0 or 2 doesn't move the selection around
-	if (uMsg == WM_CHAR) return 0;
+	else if (uMsg == WM_CHAR)
+		return 0;
+	
 	return CallWindowProc(ListBoxWndProc, hWnd, uMsg, wParam, lParam);
 }
 
@@ -164,8 +166,10 @@ LRESULT CALLBACK InstTestWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		int note = HIWORD(lParam) / scale_y(20) - 1;
 		if (note < 0 || note > 11) break;
 		note += 12 * octave;
-		if (uMsg == WM_LBUTTONDOWN) note_on(note, 24);
-		else note_off(note);
+		if (uMsg == WM_LBUTTONDOWN)
+			note_on(note, 24);
+		else
+			note_off(note);
 		break;
 	}
 	default:
@@ -256,15 +260,23 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 	case WM_COMMAND: {
 		WORD id = LOWORD(wParam), action = HIWORD(wParam);
 		switch (id) {
-		case IDC_MIDIINCOMBO:
-			if (action == CBN_SELCHANGE) {
-				midiDevice = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0) - 1;
-				closeMidiInDevice();
-				openMidiInDevice(midiDevice, MidiInProc);
-			} else if (action == CBN_CLOSEUP) {
-				SetFocus(instlist);
-			}
-			break;
+			case IDC_MIDIINCOMBO:
+				if (action == CBN_SELCHANGE) {
+					midiDevice = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0) - 1;
+					closeMidiInDevice();
+					openMidiInDevice(midiDevice, MidiInProc);
+				} else if (action == CBN_CLOSEUP) {
+					SetFocus(instlist);
+				}
+				break;
+			case IDC_INSTLIST:
+				if (action == LBN_SELCHANGE) {
+					int sel = SendMessage((HWND)lParam, LB_GETCURSEL, 0, 0);
+					struct channel_state *c = &state.chan[0];
+					set_inst(&state, c, valid_insts[sel]);
+					format_status(0, "ADSR: %02d/15  %d/7  %d/7  %02d/31", c->inst_adsr1 & 0xF, (c->inst_adsr1 >> 4) & 0x7, (c->inst_adsr2 >> 5) & 7, c->inst_adsr2 & 0x1F);
+				}
+				break;
 		}
 		break;
 	}

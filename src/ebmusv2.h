@@ -35,6 +35,7 @@ extern struct song cur_song;
 extern struct song_state pattop_state, state;
 extern HINSTANCE hinstance;
 extern HWND hwndMain;
+extern HWND hwndStatus;
 #ifdef CreateWindow
 extern HMENU hmenu, hcontextmenu;
 #endif
@@ -58,7 +59,7 @@ void free_samples(void);
 
 // ctrltbl.c
 struct control_desc {
-    // Window class (a class atom or class name; the first argument to CreateWindow)
+	// Window class (a class atom or class name; the first argument to CreateWindow)
 	const char *class;
 	// Position and dimensions in parent window (in pixels, before DPI scaling)
 	// Negative x and y are positioned relative to the right edge of the parent window
@@ -77,7 +78,7 @@ struct control_desc {
 	DWORD style;
 };
 struct window_template {
-    // Number of elements in `controls`
+	// Number of elements in `controls`
 	int num;
 	// How many elements of `controls` take up the area below divy (usually equal to `num`)
 	int lower;
@@ -238,3 +239,10 @@ extern HWND hwndTracker;
 void tracker_scrolled(void);
 void load_pattern_into_tracker(void);
 void editor_command(int id);
+
+// status.c
+#ifdef __GNUC__
+	__attribute__ ((format (gnu_printf, 2, 3)))
+#endif
+void format_status(int part, const char* format, ...);
+void set_tracker_status(int part, BYTE *code);

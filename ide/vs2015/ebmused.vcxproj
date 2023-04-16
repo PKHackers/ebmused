@@ -146,6 +146,7 @@
     <ClCompile Include="..\..\src\song.c" />
     <ClCompile Include="..\..\src\songed.c" />
     <ClCompile Include="..\..\src\sound.c" />
+    <ClCompile Include="..\..\src\status.c" />
     <ClCompile Include="..\..\src\text.c" />
     <ClCompile Include="..\..\src\tracker.c" />
   </ItemGroup>

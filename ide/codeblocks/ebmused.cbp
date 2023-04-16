@@ -103,6 +103,9 @@
 		<Unit filename="../../src/sound.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="../../src/status.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="../../src/structs.h" />
 		<Unit filename="../../src/text.c">
 			<Option compilerVar="CC" />

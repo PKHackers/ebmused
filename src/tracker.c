@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <mmsystem.h>
+#include <commctrl.h>
 #include "id.h"
 #include "ebmusv2.h"
 
@@ -177,6 +178,7 @@ static void cursor_moved(BOOL select) {
 		int esel_end = esel_start + text_length(sel_start, sel_end) - 1;
 		SendDlgItemMessage(hwndEditor, IDC_EDITBOX, EM_SETSEL, esel_start, esel_end);
 		SendDlgItemMessage(hwndEditor, IDC_EDITBOX, EM_SCROLLCARET, 0, 0);
+		set_tracker_status(0, cursor.ptr);
 	}
 	InvalidateRect(hwndTracker, NULL, FALSE);
 }
@@ -722,7 +724,7 @@ static BOOL cursor_home(BOOL select) {
 				return FALSE;
 			}
 		} while (cursor.sub_ret != target.sub_ret
-		      || cursor.sub_count != target.sub_count);
+			|| cursor.sub_count != target.sub_count);
 	} else {
 		// Go to the top of the track
 		if (cursor.ptr == pattop_state.chan[cursor_chan].ptr)
@@ -747,8 +749,8 @@ static BOOL cursor_back(BOOL select) {
 		prev = cursor;
 		if (!cursor_fwd(select)) break;
 	} while (cursor.ptr != target.ptr
-	      || cursor.sub_ret != target.sub_ret
-	      || cursor.sub_count != target.sub_count);
+		|| cursor.sub_ret != target.sub_ret
+		|| cursor.sub_count != target.sub_count);
 	cursor_pos = prev_pos;
 	cursor = prev;
 	return TRUE;
@@ -782,8 +784,8 @@ static BOOL cursor_up(BOOL select) {
 			}
 			if (!cursor_fwd(select)) break;
 		} while (cursor.ptr != target.ptr
-		      || cursor.sub_ret != target.sub_ret
-		      || cursor.sub_count != target.sub_count);
+			|| cursor.sub_ret != target.sub_ret
+			|| cursor.sub_count != target.sub_count);
 	} else {
 		// find previous start-of-line code
 		BOOL at_start = TRUE;
@@ -797,8 +799,8 @@ static BOOL cursor_up(BOOL select) {
 			}
 			if (!cursor_fwd(select)) break;
 		} while (cursor.ptr != target.ptr
-		      || cursor.sub_ret != target.sub_ret
-		      || cursor.sub_count != target.sub_count);
+			|| cursor.sub_ret != target.sub_ret
+			|| cursor.sub_count != target.sub_count);
 	}
 	if (prev.ptr == NULL)
 		return FALSE;
@@ -975,6 +977,7 @@ static void updateOrInsertDuration(BYTE(*callback)(BYTE, int), int durationOrOff
 				*cursor.ptr = duration;
 				cur_song.changed = TRUE;
 				InvalidateRect(hwndTracker, NULL, FALSE);
+				set_tracker_status(0, cursor.ptr);
 			}
 		}
 		else
