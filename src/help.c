@@ -50,6 +50,8 @@ const char help_text[] = {
 "	it is relative to the CA base instrument set by [FA].\r\n"
 "[E1 panning]\r\n"
 "	Set channel panning. 00 = right, 0A = middle, 14 = left\r\n"
+"	The top two bits set if the left and/or right stereo channels\r\n"
+"	should be inverted.\r\n"
 "[E2 time panning]\r\n"
 "	Slide channel panning\r\n"
 "[E3 start speed range]\r\n"

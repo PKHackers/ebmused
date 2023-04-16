@@ -274,7 +274,7 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 					int sel = SendMessage((HWND)lParam, LB_GETCURSEL, 0, 0);
 					struct channel_state *c = &state.chan[0];
 					set_inst(&state, c, valid_insts[sel]);
-					format_status(0, "ADSR: %02d/15  %d/7  %d/7  %02d/31", 0xF - (c->inst_adsr1 & 0xF), (c->inst_adsr1 >> 4) & 0x7, (c->inst_adsr2 >> 5) & 7, c->inst_adsr2 & 0x1F);
+					format_status(0, "ADSR: %02d/15  %d/7  %d/7  %02d/31", c->inst_adsr1 & 0xF, (c->inst_adsr1 >> 4) & 0x7, (c->inst_adsr2 >> 5) & 7, c->inst_adsr2 & 0x1F);
 				}
 				break;
 		}
