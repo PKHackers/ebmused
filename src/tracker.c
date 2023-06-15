@@ -1104,22 +1104,33 @@ void editor_command(int id) {
 		struct track *t = cursor_track;
 		int old_size = t->size;
 
+		// Try to merge the "created" subroutine with pre-existing subroutine commands
+		// immediately before and after it
 		if (start >= (t->track + 4)
 			&& start[-4] == 0xEF
-			&& *(WORD *)&start[-3] == sub
+			&& (start[-3] | (start[-2] << 8)) == sub
 			&& count + start[-1] <= 255)
 		{
 			count += start[-1];
 			start -= 4;
 		}
 		if (end[0] == 0xEF
-			&& *(WORD *)&end[1] == sub
+			&& (end[1] | (end[2] << 8)) == sub
 			&& count + end[3] <= 255)
 		{
 			count += end[3];
 			end += 4;
 		}
-		memmove(start + 4, end, t->track + (old_size + 1) - end);
+		// It's possible for the created subroutine to be smaller than 4 bytes (e.g. a single note).
+		// If it is, then we need to grow the track's allocation before we can shift the data over.
+		if (end - start < 4) {
+			ptrdiff_t endOffset = end - t->track;
+			ptrdiff_t startOffset = start - t->track;
+			t->track = realloc(t->track, old_size + 4 - (end - start) + 1);
+			end = t->track + endOffset;
+			start = t->track + startOffset;
+		}
+		memmove(start + 4, end, (old_size + 1) - (end - t->track));
 		t->size = old_size + 4 - (end - start);
 		start[0] = 0xEF;
 		start[1] = sub & 255;
@@ -1138,10 +1149,22 @@ void editor_command(int id) {
 		int off = cursor.sub_ret - t->track;
 		int count = cursor.sub_ret[-1];
 		int old_size = t->size;
+		// We're removing the [EF XXXX YY] command (4 bytes), and substituting in
+		// the subroutine's commands
 		t->size = (old_size - 4 + (subsize * count));
-		t->track = realloc(t->track, t->size + 1);
-		memmove(t->track + (off - 4) + (subsize * count), t->track + off,
-			(old_size + 1) - off);
+		if (t->size < old_size) {
+			// We already have enough room for the commands in the subroutine.
+			// Since we're making the allocation smaller, we need to move the data first.
+			// Otherwise we'll truncate the end of the track and corrupt it.
+			memmove(t->track + (off - 4) + (subsize * count), t->track + off,
+				(old_size + 1) - off);
+			t->track = realloc(t->track, t->size + 1);
+		} else {
+			// Make room for the commands inside the subroutine
+			t->track = realloc(t->track, t->size + 1);
+			memmove(t->track + (off - 4) + (subsize * count), t->track + off,
+				(old_size + 1) - off);
+		}
 		BYTE *dest = t->track + (off - 4);
 		for (int i = 0; i < count; i++) {
 			memcpy(dest, src, subsize);
