@@ -1106,7 +1106,7 @@ void editor_command(int id) {
 
 		// Try to merge the "created" subroutine with pre-existing subroutine commands
 		// immediately before and after it
-		if (start >= (t->track + 4)
+		if (start - t->track >= 4
 			&& start[-4] == 0xEF
 			&& (start[-3] | (start[-2] << 8)) == sub
 			&& count + start[-1] <= 255)
