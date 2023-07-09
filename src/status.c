@@ -16,7 +16,7 @@ void format_status(int part, const char* format, ...) {
 		va_start(args, format);
 		vsprintf(buf, format, args);
 		va_end(args);
-		
+
 		SendMessage(hwndStatus, SB_SETTEXT, part, (LPARAM)buf);
 
 		free(buf);
@@ -30,7 +30,7 @@ void set_tracker_status(int p, BYTE *code) {
 		format_status(p, "End of pattern/subroutine");
 	} else if (code[0] < 0x80) {
 		if (code[1] < 0x80) {
-			format_status(p, "Note length: %d, velocity: %d/7, release: %d/15", code[0], (code[1] >> 4) & 0x7, code[1] & 0xF);
+			format_status(p, "Note length: %d, release: %d/7, velocity: %d/15", code[0], (code[1] >> 4) & 0x7, code[1] & 0xF);
 		} else {
 			format_status(p, "Note length: %d", code[0]);
 		}
@@ -78,8 +78,8 @@ void set_tracker_status(int p, BYTE *code) {
 			case 0xEE: format_status(p, "Channel volume (duration: %d, volume: %d/255)", code[1], code[2]); break;
 			case 0xEF: format_status(p, "Call subroutine %d, %d %s", code[1] | code[2] << 8, code[3], code[3] == 1 ? "time" : "times"); break;
 			case 0xF0: format_status(p, "Set vibrato attack %d", code[1]); break;
-			case 0xF1: format_status(p, "Enable portamento (delay: %d, duration: %d, end note: +%d)", code[1], code[2], code[3]); break;
-			case 0xF2: format_status(p, "Enable portamento (delay: %d, duration: %d, start note: -%d)", code[1], code[2], code[3]); break;
+			case 0xF1: format_status(p, "Enable portamento (delay: %d, duration: %d, end note: %+d)", code[1], code[2], (signed char)code[3]); break;
+			case 0xF2: format_status(p, "Enable portamento (delay: %d, duration: %d, start note: %+d)", code[1], code[2], -(signed char)code[3]); break;
 			case 0xF3: format_status(p, "Disable portamento"); break;
 			case 0xF4: format_status(p, "Finetune %d/256 semitones", code[1]); break;
 			case 0xF5:
@@ -97,7 +97,7 @@ void set_tracker_status(int p, BYTE *code) {
 				break;
 			case 0xF6: format_status(p, "Disable echo"); break;
 			case 0xF7: format_status(p, "Echo settings (delay: %d, feedback: %d, filter: %d)", code[1], (signed char)code[2], code[3]); break;
-			case 0xF8: format_status(p, "Echo volume (delay: %d, left volume: %d, right volume: %d)", code[1], code[2], code[3]); break;
+			case 0xF8: format_status(p, "Echo volume (delay: %d, left volume: %d, right volume: %d)", code[1], (signed char)code[2], (signed char)code[3]); break;
 			case 0xF9: {
 				BYTE note = (code[3] & 0x7F);
 				format_status(p, "Pitch bend (delay: %d, duration: %d, note: %s%c)", code[1], code[2], notes[note%12], '1' + note / 12);
