@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "ebmusv2.h"
+#include "id.h"
 
 #define IDC_ROM_FILE 17
 #define IDC_ORIG_ROM_FILE 18
@@ -121,8 +122,10 @@ void load_instruments() {
 	sample_ptr_base = 0x6C00;
 	decode_samples(&spc[sample_ptr_base]);
 	inst_base = 0x6E00;
-	if (samp[0].data == NULL)
-		song_playing = FALSE;
+	if (samp[0].data == NULL) {
+		stop_playing();
+		EnableMenuItem(hmenu, ID_PLAY, MF_ENABLED);
+	}
 	initialize_state();
 }
 

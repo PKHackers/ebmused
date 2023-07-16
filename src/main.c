@@ -43,6 +43,7 @@ HWND hwndMain;
 HWND hwndStatus;
 HMENU hmenu, hcontextmenu;
 HWND tab_hwnd[NUM_TABS];
+FILE* wav_file = NULL;
 
 static int current_tab;
 static const char *const tab_class[NUM_TABS] = {
@@ -68,10 +69,9 @@ static const WNDPROC tab_wndproc[NUM_TABS] = {
 	PackListWndProc,
 };
 
-
 static char filename[MAX_PATH];
 static OPENFILENAME ofn;
-static char *open_dialog(BOOL (WINAPI *func)(LPOPENFILENAME),
+char *open_dialog(BOOL (WINAPI *func)(LPOPENFILENAME),
 	char *filter, char *extension, DWORD flags)
 {
 	*filename = '\0';
@@ -593,6 +593,18 @@ BOOL save_all_packs() {
 	return success;
 }
 
+BOOL validate_playable() {
+	if (cur_song.order_length == 0) {
+		MessageBox2("No song loaded", "Play", MB_ICONEXCLAMATION);
+		return FALSE;
+	} else if (samp[0].data == NULL) {
+		MessageBox2("No instruments loaded", "Play", MB_ICONEXCLAMATION);
+		return FALSE;
+	} else {
+		return TRUE;
+	}
+}
+
 LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg) {
 	case 0x3BB: case 0x3BC: case 0x3BD: // MM_WOM_OPEN, CLOSE, DONE
@@ -672,17 +684,38 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			editor_command(id);
 			break;
 		case ID_PLAY:
-			if (cur_song.order_length == 0)
-				MessageBox2("No song loaded", "Play", MB_ICONEXCLAMATION);
-			else if (samp[0].data == NULL)
-				MessageBox2("No instruments loaded", "Play", MB_ICONEXCLAMATION);
-			else {
-				if (sound_init()) song_playing = TRUE;
+			if (validate_playable()) {
+				start_playing();
+				EnableMenuItem(hmenu, ID_STOP, MF_ENABLED);
 			}
 			break;
 		case ID_STOP:
-			song_playing = FALSE;
+			if (current_tab == 1) {
+				stop_capturing_audio();
+			} else {
+				stop_playing();
+				EnableMenuItem(hmenu, ID_PLAY, MF_ENABLED);
+			}
 			break;
+		case ID_CAPTURE_AUDIO: {
+			if (current_tab == 1) {
+				if (is_capturing_audio()) {
+					stop_capturing_audio();
+				} else {
+					start_capturing_audio();
+				}
+			} else {
+				if (is_capturing_audio()) {
+					stop_capturing_audio();
+				} else {
+					if (validate_playable() && start_capturing_audio()) {
+						start_playing();
+						EnableMenuItem(hmenu, ID_STOP, MF_ENABLED);
+					}
+				}
+			}
+			break;
+		}
 		case ID_OCTAVE_1: case ID_OCTAVE_1+1: case ID_OCTAVE_1+2:
 		case ID_OCTAVE_1+3: case ID_OCTAVE_1+4:
 			octave = id - ID_OCTAVE_1;

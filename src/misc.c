@@ -9,6 +9,14 @@ void enable_menu_items(const BYTE *list, int flags) {
 	while (*list) EnableMenuItem(hmenu, *list++, flags);
 }
 
+void update_menu_item(UINT item, LPWSTR label) {
+	MENUITEMINFOW menuiteminfo = { sizeof(MENUITEMINFO) };
+	GetMenuItemInfo(hmenu, item, FALSE, &menuiteminfo);
+	menuiteminfo.fMask = MIIM_STRING;
+	menuiteminfo.dwTypeData = label;
+	SetMenuItemInfo(hmenu, item, FALSE, &menuiteminfo);
+}
+
 HFONT oldfont;
 COLORREF oldtxt, oldbk;
 

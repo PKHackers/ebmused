@@ -41,10 +41,12 @@ extern HMENU hmenu, hcontextmenu;
 #endif
 #define NUM_TABS 4
 extern HWND tab_hwnd[NUM_TABS];
+extern FILE* wav_file;
 #define hwndBGMList tab_hwnd[0]
 #define hwndInstruments tab_hwnd[1]
 #define hwndEditor tab_hwnd[2]
 #define hwndPackList tab_hwnd[3]
+char *open_dialog(BOOL (WINAPI *func)(LPOPENFILENAME), char *filter, char *extension, DWORD flags);
 BOOL get_original_rom(void);
 BOOL save_all_packs(void);
 
@@ -151,6 +153,7 @@ void free_metadata(void);
 
 // misc.c
 void enable_menu_items(const BYTE *list, int flags);
+void update_menu_item(UINT item, LPWSTR label);
 #ifdef CreateWindow
 void set_up_hdc(HDC hdc);
 void reset_hdc(HDC hdc);
@@ -223,7 +226,12 @@ void order_delete(int pos);
 // sound.c
 extern int mixrate;
 extern int chmask;
-extern BOOL song_playing;
+BOOL is_playing();
+BOOL start_playing();
+void stop_playing();
+BOOL is_capturing_audio();
+BOOL start_capturing_audio();
+void stop_capturing_audio();
 extern int timer_speed;
 int sound_init(void);
 void winmm_message(unsigned int uMsg);
