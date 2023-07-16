@@ -13,6 +13,7 @@ int chmask = 255;
 int timer_speed = 500;
 HWAVEOUT hwo;
 static BOOL song_playing = FALSE;
+FILE* wav_file = NULL;
 
 BOOL is_playing() { return song_playing; }
 BOOL start_playing() {

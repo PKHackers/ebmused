@@ -43,7 +43,6 @@ HWND hwndMain;
 HWND hwndStatus;
 HMENU hmenu, hcontextmenu;
 HWND tab_hwnd[NUM_TABS];
-FILE* wav_file = NULL;
 
 static int current_tab;
 static const char *const tab_class[NUM_TABS] = {

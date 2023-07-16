@@ -41,7 +41,6 @@ extern HMENU hmenu, hcontextmenu;
 #endif
 #define NUM_TABS 4
 extern HWND tab_hwnd[NUM_TABS];
-extern FILE* wav_file;
 #define hwndBGMList tab_hwnd[0]
 #define hwndInstruments tab_hwnd[1]
 #define hwndEditor tab_hwnd[2]
