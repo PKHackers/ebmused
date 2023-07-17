@@ -152,7 +152,7 @@ void free_metadata(void);
 
 // misc.c
 void enable_menu_items(const BYTE *list, int flags);
-void update_menu_item(UINT item, LPWSTR label);
+void update_menu_item(UINT item, LPTSTR label);
 #ifdef CreateWindow
 void set_up_hdc(HDC hdc);
 void reset_hdc(HDC hdc);
