@@ -1,3 +1,7 @@
+#ifndef EBMUSV2_H
+#define EBMUSV2_H
+
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "structs.h"
 
@@ -225,12 +229,12 @@ void order_delete(int pos);
 // sound.c
 extern int mixrate;
 extern int chmask;
-BOOL is_playing();
-BOOL start_playing();
-void stop_playing();
-BOOL is_capturing_audio();
-BOOL start_capturing_audio();
-void stop_capturing_audio();
+BOOL is_playing(void);
+BOOL start_playing(void);
+void stop_playing(void);
+BOOL is_capturing_audio(void);
+BOOL start_capturing_audio(void);
+void stop_capturing_audio(void);
 extern int timer_speed;
 int sound_init(void);
 void winmm_message(unsigned int uMsg);
@@ -253,3 +257,5 @@ void editor_command(int id);
 #endif
 void format_status(int part, const char* format, ...);
 void set_tracker_status(int part, BYTE *code);
+
+#endif // EBMUSV2_H

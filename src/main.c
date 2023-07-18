@@ -44,6 +44,7 @@ HWND hwndStatus;
 HMENU hmenu, hcontextmenu;
 HWND tab_hwnd[NUM_TABS];
 
+static const int INST_TAB = 1;
 static int current_tab;
 static const char *const tab_class[NUM_TABS] = {
 	"ebmused_bgmlist",
@@ -592,7 +593,7 @@ BOOL save_all_packs() {
 	return success;
 }
 
-BOOL validate_playable() {
+static BOOL validate_playable(void) {
 	if (cur_song.order_length == 0) {
 		MessageBox2("No song loaded", "Play", MB_ICONEXCLAMATION);
 		return FALSE;
@@ -689,7 +690,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 			break;
 		case ID_STOP:
-			if (current_tab == 1) {
+			if (current_tab == INST_TAB) {
 				stop_capturing_audio();
 			} else {
 				stop_playing();
@@ -697,7 +698,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 			break;
 		case ID_CAPTURE_AUDIO: {
-			if (current_tab == 1) {
+			if (current_tab == INST_TAB) {
 				if (is_capturing_audio()) {
 					stop_capturing_audio();
 				} else {
