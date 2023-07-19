@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "ebmusv2.h"
+#include "misc.h"
 #include "id.h"
 
 #define IDC_ROM_FILE 17

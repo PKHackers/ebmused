@@ -21,6 +21,7 @@
 #include <commdlg.h>
 #include <commctrl.h>
 #include "ebmusv2.h"
+#include "misc.h"
 
 enum {
 	MAIN_WINDOW_WIDTH = 720,
@@ -98,7 +99,7 @@ BOOL get_original_rom() {
 static void tab_selected(int new) {
 	if (new < 0 || new >= NUM_TABS) return;
 	current_tab = new;
-	format_status(0, "");
+	format_status(0, "%s", "");
 
 	for (int i = 0; i < NUM_TABS; i++) {
 		if (tab_hwnd[i]) {
@@ -418,24 +419,6 @@ static void export_spc() {
 	}
 }
 
-// Loads pack by index and copies its contents to "spc" at the appropriate locations.
-static void pack_to_spc(BYTE pack, BYTE* spc) {
-	if (pack < NUM_PACKS) {
-		const WORD header_size = 0x100;
-
-		struct pack *p = load_pack(pack);
-		for (int block = 0; block < p->block_count; block++) {
-			struct block *b = &p->blocks[block];
-
-			if (b->size <= 0x10000 - b->spc_address) {
-				memcpy(spc + header_size + b->spc_address, b->data, b->size);
-			} else {
-				printf("SPC pack 0x%x block %d too large.\n", pack, block);
-			}
-		}
-	}
-}
-
 static void write_spc(FILE *f) {
 	// Load blank SPC file.
 	HRSRC res = FindResource(hinstance, MAKEINTRESOURCE(IDRC_SPC), RT_RCDATA);
@@ -618,7 +601,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		TC_ITEM item = {0};
 		item.mask = TCIF_TEXT;
 		for (int i = 0; i < NUM_TABS; i++) {
-			item.pszText = tab_name[i];
+			item.pszText = (char*)tab_name[i];
 			(void)TabCtrl_InsertItem(tabs, i, &item);
 		}
 		SendMessage(tabs, WM_SETFONT, tabs_font(), TRUE);

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ebmusv2.h"
+#include "misc.h"
 
 void order_insert(int pos, int pat) {
 	int *p = array_insert(&cur_song.order, &cur_song.order_length,
@@ -213,4 +214,3 @@ int create_sub(BYTE *start, BYTE *end, int *count) {
 	// should never get here
 	return -1;
 }
-

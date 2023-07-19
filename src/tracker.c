@@ -6,6 +6,7 @@
 #include <commctrl.h>
 #include "id.h"
 #include "ebmusv2.h"
+#include "misc.h"
 
 HWND hwndTracker;
 static HWND hwndOrder;

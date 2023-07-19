@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "ebmusv2.h"
+#include "misc.h"
 
 void create_controls(HWND hWnd, struct window_template *t, LPARAM cs) {
 	int width = ((CREATESTRUCT *)cs)->cx;

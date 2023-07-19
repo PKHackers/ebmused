@@ -6,6 +6,7 @@
 #include <mmsystem.h>
 #include "id.h"
 #include "ebmusv2.h"
+#include "misc.h"
 
 int mixrate = 44100;
 int bufsize = 2205;
