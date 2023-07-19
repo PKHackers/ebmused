@@ -30,7 +30,8 @@
 #define ID_OPTIONS 130
 #define ID_PLAY 131
 #define ID_STOP 132
-#define ID_CLEAR_SONG 133
+#define ID_CAPTURE_AUDIO 133
+#define ID_CLEAR_SONG 134
 #define ID_ZOOM_IN 140
 #define ID_ZOOM_OUT 141
 #define ID_STATUS_BAR 142

@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <mmsystem.h>
 #include <commctrl.h>
+#include "id.h"
 #include "ebmusv2.h"
 
 #define IDC_SAMPLIST_CAPTION 1
@@ -225,8 +226,7 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 			SendMessage(instlist, LB_ADDSTRING, 0, (LPARAM)buf);
 			*p++ = i;
 		}
-		if (sound_init())
-			song_playing = TRUE;
+		start_playing();
 		timer_speed = 0;
 		memset(&state.chan, 0, sizeof state.chan);
 		for (int ch = 0; ch < 8; ch++) {
@@ -255,6 +255,7 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		closeMidiInDevice();
 		openMidiInDevice(midiDevice, MidiInProc);
 
+		EnableMenuItem(hmenu, ID_STOP, MF_GRAYED);
 		break;
 	}
 	case WM_COMMAND: {
@@ -288,7 +289,7 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		move_controls(hWnd, &inst_list_template, lParam);
 		break;
 	case WM_DESTROY:
-		song_playing = FALSE;
+		stop_playing();
 		state = pattop_state;
 		timer_speed = 500;
 		chmask = prev_chmask;
@@ -296,6 +297,8 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 
 		// Store the current selected instrument.
 		selectedInstrument = SendMessage(instlist, LB_GETCURSEL, 0, 0);
+
+		EnableMenuItem(hmenu, ID_PLAY, MF_ENABLED);
 		break;
 	default:
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);

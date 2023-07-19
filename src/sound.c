@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <commdlg.h>
 #include <mmsystem.h>
 #include "id.h"
 #include "ebmusv2.h"
@@ -11,7 +12,23 @@ int bufsize = 2205;
 int chmask = 255;
 int timer_speed = 500;
 HWAVEOUT hwo;
-BOOL song_playing;
+static BOOL song_playing = FALSE;
+FILE* wav_file = NULL;
+
+BOOL is_playing(void) { return song_playing; }
+BOOL start_playing(void) {
+	if (sound_init()) {
+		song_playing = TRUE;
+		EnableMenuItem(hmenu, ID_PLAY, MF_GRAYED);
+	}
+
+	return song_playing;
+}
+void stop_playing(void) {
+	stop_capturing_audio();
+	song_playing = FALSE;
+	EnableMenuItem(hmenu, ID_STOP, MF_GRAYED);
+}
 
 static WAVEHDR wh[2], *curbuf = &wh[0];
 static int bufs_used;
@@ -46,7 +63,68 @@ int sound_init() {
 	wh[1].dwBufferLength = bufsize*4;
 	waveOutPrepareHeader(hwo, &wh[0], sizeof *wh);
 	waveOutPrepareHeader(hwo, &wh[1], sizeof *wh);
+
 	return 1;
+}
+
+BOOL is_capturing_audio(void) {
+	return wav_file ? TRUE : FALSE;
+}
+
+BOOL start_capturing_audio(void) {
+	if (song_playing || sound_init()) {
+		char *file = open_dialog(GetSaveFileName, "WAV files (*.wav)\0*.wav\0", "wav", OFN_OVERWRITEPROMPT);
+		if (file) {
+			stop_capturing_audio();
+			wav_file = fopen(file, "wb");
+
+			if (wav_file) {
+				update_menu_item(ID_CAPTURE_AUDIO, "Stop C&apturing");
+				EnableMenuItem(hmenu, ID_STOP, MF_ENABLED);
+
+				DWORD size_placeholder = 0;
+				DWORD format_header_size = 16;
+				WORD formatTag = WAVE_FORMAT_PCM;
+				WORD num_channels = 2;
+				DWORD sample_rate = mixrate;
+				DWORD avg_byte_rate = mixrate*4;
+				WORD block_alignment = 4;
+				WORD bit_depth = 16;
+
+				fputs("RIFF", wav_file);
+				fwrite(&size_placeholder, sizeof size_placeholder, 1, wav_file);
+				fputs("WAVE", wav_file);
+				fputs("fmt ", wav_file);
+				fwrite(&format_header_size, sizeof format_header_size, 1, wav_file);
+				fwrite(&formatTag, sizeof formatTag, 1, wav_file);
+				fwrite(&num_channels, sizeof num_channels, 1, wav_file);
+				fwrite(&sample_rate, sizeof sample_rate, 1, wav_file);
+				fwrite(&avg_byte_rate, sizeof avg_byte_rate, 1, wav_file);
+				fwrite(&block_alignment, sizeof block_alignment, 1, wav_file);
+				fwrite(&bit_depth, sizeof bit_depth, 1, wav_file);
+				fputs("data", wav_file);
+				fwrite(&size_placeholder, sizeof size_placeholder, 1, wav_file);
+			}
+		}
+	}
+
+	return wav_file ? TRUE : FALSE;
+}
+
+void stop_capturing_audio(void) {
+	if (wav_file) {
+		update_menu_item(ID_CAPTURE_AUDIO, "Capture &Audio...");
+
+		int size = ftell(wav_file) - 8;
+		fseek(wav_file, 4, SEEK_SET);
+		fwrite(&size, sizeof size, 1, wav_file);
+
+		fseek(wav_file, 40, SEEK_SET);
+		size -= 36;
+		fwrite(&size, sizeof size, 1, wav_file);
+		fclose(wav_file);
+		wav_file = NULL;
+	}
 }
 
 static void sound_uninit() {
@@ -232,6 +310,10 @@ static void fill_buffer() {
 			putchar(219);
 		putchar('\n');
 	}*/
+	if (wav_file) {
+		fwrite(curbuf->lpData, curbuf->dwBufferLength, 1, wav_file);
+	}
+
 	waveOutWrite(hwo, curbuf, sizeof *wh);
 	bufs_used++;
 	curbuf = &wh[(curbuf - wh) ^ 1];

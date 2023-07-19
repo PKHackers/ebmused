@@ -88,7 +88,7 @@ BOOL close_rom() {
 	// This protects from crashes if an SPC was playing.
 	free_samples();
 	free_song(&cur_song);
-	song_playing = FALSE;
+	stop_playing();
 	initialize_state();
 
 	memset(packs_loaded, 0xFF, 3);

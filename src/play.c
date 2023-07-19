@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "ebmusv2.h"
+#include "id.h"
 
 BYTE spc[65536];
 int inst_base = 0x6E00;
@@ -315,7 +316,8 @@ void load_pattern() {
 			state.repeat_count = cur_song.repeat;
 		if (state.repeat_count == 0) {
 			state.ordnum--;
-			song_playing = FALSE;
+			stop_playing();
+			EnableMenuItem(hmenu, ID_PLAY, MF_ENABLED);
 			return;
 		}
 		state.ordnum = cur_song.repeat_pos;
@@ -512,7 +514,7 @@ BOOL do_timer() {
 		state.cycle_timer -= 256;
 		while (!do_cycle(&state)) {
 			load_pattern();
-			if (!song_playing) return FALSE;
+			if (!is_playing()) return FALSE;
 			load_pattern_into_tracker();
 		}
 	} else {
@@ -539,6 +541,7 @@ void initialize_state() {
 		load_pattern();
 	} else {
 		pattop_state = state;
-		song_playing = FALSE;
+		stop_playing();
+		EnableMenuItem(hmenu, ID_PLAY, MF_ENABLED);
 	}
 }
