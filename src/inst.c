@@ -6,6 +6,7 @@
 #include <commctrl.h>
 #include "id.h"
 #include "ebmusv2.h"
+#include "misc.h"
 
 #define IDC_SAMPLIST_CAPTION 1
 #define IDC_SAMPLIST 2

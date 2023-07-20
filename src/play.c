@@ -76,7 +76,7 @@ void set_inst(struct song_state *st, struct channel_state *c, int inst) {
 	if (inst < 0 || inst >= MAX_INSTRUMENTS || !samp[idata[0]].data ||
 		(idata[4] == 0 && idata[5] == 0))
 	{
-		printf("ch %d: bad inst %X\n", c - st->chan, inst);
+		printf("ch %d: bad inst %X\n", (int)(c - st->chan), inst);
 		return;
 	}
 

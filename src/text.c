@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ebmusv2.h"
+#include "misc.h"
 
 static int unhex(int chr) {
 	if (chr >= '0' && chr <= '9')

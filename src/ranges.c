@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ebmusv2.h"
+#include "misc.h"
 
 int area_count;
 struct area *areas;

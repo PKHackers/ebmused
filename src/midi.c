@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <mmsystem.h>
 #include "ebmusv2.h"
+#include "misc.h"
 
 static HMIDIIN hMidiIn = NULL;
 
