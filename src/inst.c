@@ -39,7 +39,7 @@ static struct window_template inst_list_template = {
 };
 
 static unsigned char valid_insts[MAX_INSTRUMENTS];
-static int cnote[8];
+static int cnote[16];
 
 int note_from_key(int key, BOOL shift) {
 	if (key == VK_OEM_PERIOD) return 0x48; // continue
@@ -69,7 +69,7 @@ static void draw_square(int note, HBRUSH brush) {
 }
 
 static void note_off(int note) {
-	for (int ch = 0; ch < 8; ch++)
+	for (int ch = 0; ch < 16; ch++)
 		if (state.chan[ch].samp_pos >= 0 && cnote[ch] == note) {
 			state.chan[ch].note_release = 0;
 			state.chan[ch].next_env_state = ENV_STATE_KEY_OFF;
@@ -83,9 +83,9 @@ static void note_on(int note, int velocity) {
 	int inst = valid_insts[sel];
 
 	int ch;
-	for (ch = 0; ch < 8; ch++)
+	for (ch = 0; ch < 16; ch++)
 		if (state.chan[ch].samp_pos < 0) break;
-	if (ch == 8) return;
+	if (ch == 16) return;
 	cnote[ch] = note;
 	struct channel_state *c = &state.chan[ch];
 	set_inst(&state, c, inst);
@@ -183,6 +183,7 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 	switch (uMsg) {
 	case WM_CREATE: {
 		prev_chmask = chmask;
+		chmask = 0xFFFF;
 		WPARAM fixed = (WPARAM)fixed_font();
 		char buf[40];
 
@@ -229,7 +230,7 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		start_playing();
 		timer_speed = 0;
 		memset(&state.chan, 0, sizeof state.chan);
-		for (int ch = 0; ch < 8; ch++) {
+		for (int ch = 0; ch < 16; ch++) {
 			state.chan[ch].samp_pos = -1;
 		}
 

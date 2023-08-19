@@ -9,7 +9,7 @@
 
 int mixrate = 44100;
 int bufsize = 2205;
-int chmask = 255;
+int chmask = 0xFF;
 int timer_speed = 500;
 HWAVEOUT hwo;
 static BOOL song_playing = FALSE;
