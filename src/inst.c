@@ -40,6 +40,29 @@ static struct window_template inst_list_template = {
 
 static unsigned char valid_insts[MAX_INSTRUMENTS];
 static int cnote[16];
+static struct history {
+	struct history *prev;
+	struct history *next;
+}  channel_order[16] = {
+	// TODO: Construct this on tab init so the polyphony can change from one location.
+	{ &channel_order[15], &channel_order[1] },
+	{ &channel_order[0] , &channel_order[2] },
+	{ &channel_order[1], &channel_order[3] },
+	{ &channel_order[2], &channel_order[4] },
+	{ &channel_order[3], &channel_order[5] },
+	{ &channel_order[4], &channel_order[6] },
+	{ &channel_order[5], &channel_order[7] },
+	{ &channel_order[6], &channel_order[8] },
+	{ &channel_order[7], &channel_order[9] },
+	{ &channel_order[8], &channel_order[10] },
+	{ &channel_order[9], &channel_order[11] },
+	{ &channel_order[10], &channel_order[12] },
+	{ &channel_order[11], &channel_order[13] },
+	{ &channel_order[12], &channel_order[14] },
+	{ &channel_order[13], &channel_order[15] },
+	{ &channel_order[14], &channel_order[0] },
+};
+struct history* oldest_chan = channel_order;
 
 int note_from_key(int key, BOOL shift) {
 	if (key == VK_OEM_PERIOD) return 0x48; // continue
@@ -68,11 +91,47 @@ static void draw_square(int note, HBRUSH brush) {
 	ReleaseDC(insttest, hdc);
 }
 
+// Sets the channel as being the latest one that's been played.
+static void set_latest_channel(int ch) {
+	if (&channel_order[ch] == oldest_chan) {
+		oldest_chan = oldest_chan->next;
+	} else {
+		// Remove this item from the linked list.
+		if (channel_order[ch].prev && channel_order[ch].next) {
+			channel_order[ch].prev->next = channel_order[ch].next;
+			channel_order[ch].next->prev = channel_order[ch].prev;
+		}
+		// Move it to the end of the linked list
+		channel_order[ch].next = oldest_chan ? oldest_chan : (oldest_chan = &channel_order[ch]);
+		channel_order[ch].prev = oldest_chan->prev ? oldest_chan->prev : (oldest_chan->prev = &channel_order[ch]);
+		oldest_chan->prev->next = &channel_order[ch];
+		oldest_chan->prev = &channel_order[ch];
+	}
+}
+
+// Sets channel as the oldest one to have been played.
+static void set_oldest_channel(int ch) {
+	if (&channel_order[ch] != oldest_chan) {
+		// Remove this item from the linked list.
+		if (channel_order[ch].prev && channel_order[ch].next) {
+			channel_order[ch].prev->next = channel_order[ch].next;
+			channel_order[ch].next->prev = channel_order[ch].prev;
+		}
+		// Move it to the end of the linked list
+		channel_order[ch].next = oldest_chan ? oldest_chan : (oldest_chan = &channel_order[ch]);
+		channel_order[ch].prev = oldest_chan->prev ? oldest_chan->prev : (oldest_chan->prev = &channel_order[ch]);
+		oldest_chan->prev->next = &channel_order[ch];
+		oldest_chan->prev = &channel_order[ch];
+		oldest_chan = &channel_order[ch];
+	}
+}
+
 static void note_off(int note) {
 	for (int ch = 0; ch < 16; ch++)
 		if (state.chan[ch].samp_pos >= 0 && cnote[ch] == note) {
 			state.chan[ch].note_release = 0;
 			state.chan[ch].next_env_state = ENV_STATE_KEY_OFF;
+			set_oldest_channel(ch);
 		}
 	draw_square(note, GetStockObject(WHITE_BRUSH));
 }
@@ -82,10 +141,9 @@ static void note_on(int note, int velocity) {
 	if (sel < 0) return;
 	int inst = valid_insts[sel];
 
-	int ch;
-	for (ch = 0; ch < 16; ch++)
-		if (state.chan[ch].samp_pos < 0) break;
-	if (ch == 16) return;
+	int ch = oldest_chan - channel_order;
+	set_latest_channel(ch);
+
 	cnote[ch] = note;
 	struct channel_state *c = &state.chan[ch];
 	set_inst(&state, c, inst);
