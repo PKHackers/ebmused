@@ -40,6 +40,8 @@ static struct window_template inst_list_template = {
 
 static unsigned char valid_insts[MAX_INSTRUMENTS];
 static int cnote[16];
+static char sustained[16] = { 0 };
+static char sustain = FALSE;
 static struct history {
 	struct history *prev;
 	struct history *next;
@@ -111,27 +113,39 @@ static void set_latest_channel(int ch) {
 
 // Sets channel as the oldest one to have been played.
 static void set_oldest_channel(int ch) {
-	if (&channel_order[ch] != oldest_chan) {
-		// Remove this item from the linked list.
-		if (channel_order[ch].prev && channel_order[ch].next) {
-			channel_order[ch].prev->next = channel_order[ch].next;
-			channel_order[ch].next->prev = channel_order[ch].prev;
+	set_latest_channel(ch);
+	oldest_chan = &channel_order[ch];
+}
+
+static void channel_off(int ch) {
+	if (state.chan[ch].samp_pos >= 0) {
+		state.chan[ch].note_release = 0;
+		state.chan[ch].next_env_state = ENV_STATE_KEY_OFF;
+		set_oldest_channel(ch);
+		sustained[ch] = FALSE;
+	}
+}
+
+static void sustain_on() {
+	sustain = TRUE;
+}
+
+static void sustain_off() {
+	sustain = FALSE;
+	for (int ch = 0; ch < 16; ch++) {
+		if (sustained[ch]) {
+			channel_off(ch);
 		}
-		// Move it to the end of the linked list
-		channel_order[ch].next = oldest_chan ? oldest_chan : (oldest_chan = &channel_order[ch]);
-		channel_order[ch].prev = oldest_chan->prev ? oldest_chan->prev : (oldest_chan->prev = &channel_order[ch]);
-		oldest_chan->prev->next = &channel_order[ch];
-		oldest_chan->prev = &channel_order[ch];
-		oldest_chan = &channel_order[ch];
 	}
 }
 
 static void note_off(int note) {
 	for (int ch = 0; ch < 16; ch++)
-		if (state.chan[ch].samp_pos >= 0 && cnote[ch] == note) {
-			state.chan[ch].note_release = 0;
-			state.chan[ch].next_env_state = ENV_STATE_KEY_OFF;
-			set_oldest_channel(ch);
+		if (cnote[ch] == note) {
+			if (sustain)
+				sustained[ch] = TRUE;
+			else
+				channel_off(ch);
 		}
 	draw_square(note, GetStockObject(WHITE_BRUSH));
 }
@@ -143,6 +157,7 @@ static void note_on(int note, int velocity) {
 
 	int ch = oldest_chan - channel_order;
 	set_latest_channel(ch);
+	sustained[ch] = FALSE;
 
 	cnote[ch] = note;
 	struct channel_state *c = &state.chan[ch];
@@ -165,19 +180,27 @@ static void CALLBACK MidiInProc(HMIDIIN handle, UINT wMsg, DWORD_PTR dwInstance,
 			param1 = (dwParam1 >> 8) & 0xFF,
 			param2 = (dwParam1 >> 16) & 0xFF;
 
-		if ((eventType & 0x80) && eventType < 0xF0) {	// If not a system exclusive MIDI message
+		if ((eventType & 0x80) && eventType < 0xF0) { // If not a system exclusive MIDI message
 			switch (eventType & 0xF0) {
 			case 0xC0:	// Instrument change event
 				SendMessage(instlist, LB_SETCURSEL, param1, 0);
 				break;
-			case 0x90:	// Note On event
+			case 0x90: // Note On event
 				if (param2 > 0)
 					note_on(param1 + (octave - 4)*12, param2/2);
 				else
 					note_off(param1 + (octave - 4)*12);
 				break;
-			case 0x80:	// Note Off event
+			case 0x80: // Note Off event
 					note_off(param1 + (octave - 4)*12);
+				break;
+			case 0xB0: // Control change
+				if (param1 == 64) { // Sustain pedal
+					if (param2 >= 64)
+						sustain_on();
+					else
+						sustain_off();
+				}
 				break;
 			}
 		}
