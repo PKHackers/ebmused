@@ -343,7 +343,8 @@ BOOL CALLBACK OptionsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_INITDIALOG:
 		SetDlgItemInt(hWnd, IDC_RATE, mixrate, FALSE);
 		SetDlgItemInt(hWnd, IDC_BUFSIZE, bufsize, FALSE);
-		song_playing = FALSE;
+		stop_playing();
+		EnableMenuItem(hmenu, ID_PLAY, MF_ENABLED);
 		break;
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {

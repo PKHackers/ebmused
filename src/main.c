@@ -659,6 +659,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case ID_OPTIONS: {
 			extern BOOL CALLBACK OptionsDlgProc(HWND,UINT,WPARAM,LPARAM);
 			DialogBox(hinstance, MAKEINTRESOURCE(IDD_OPTIONS), hWnd, OptionsDlgProc);
+			if (current_tab == INST_TAB) {
+				// Re-enable playback for the instruments tab...
+				start_playing();
+			}
 			break;
 		}
 		case ID_CUT:
