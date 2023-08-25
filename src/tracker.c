@@ -547,13 +547,26 @@ static void tracker_paint(HWND hWnd) {
 	pos += rc.top;
 	// simulate rounding towards zero, so these numbers
 	// will be properly aligned with the notes
-	rc.top = (rc.top + zoom) * font_height / zoom - font_height;
-	while (rc.top < ps.rcPaint.bottom) {
-		int len = sprintf(codes, "%d", pos);
+	for (rc.top = (rc.top + zoom) * font_height / zoom - font_height;
+		rc.top < ps.rcPaint.bottom;
+		rc.top = rc.bottom, pos += zoom)
+	{
 		rc.bottom = rc.top + font_height;
+
+		// Set colors for bar/measure indicators
+		if (pos % 0x60 == 0) {
+			SetTextColor(hdc, 808080);
+			SetBkColor(hdc, 0xF0F0F0);
+		} else if (pos % 0x18 == 0) {
+			SetTextColor(hdc, 0xFFFFFF);
+			SetBkColor(hdc, 0xA0A0A0);
+		} else {
+			SetTextColor(hdc, 0xFFFFFF);
+			SetBkColor(hdc, 0x808080);
+		}
+
+		int len = sprintf(codes, "%d", pos);
 		ExtTextOut(hdc, rc.left, rc.top, ETO_OPAQUE, &rc, codes, len, NULL);
-		rc.top = rc.bottom;
-		pos += zoom;
 	}
 
 	for (int chan = 0; chan < 8; chan++) {
