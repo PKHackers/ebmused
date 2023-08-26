@@ -1,3 +1,5 @@
+#include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #define WIN32_LEAN_AND_MEAN
@@ -6,6 +8,19 @@
 #include "id.h"
 #include "ebmusv2.h"
 
+// TODO: make non-const, add UI to allow changing this at runtime
+static const enum InterpolationMethod {
+	// The method used by the actual SNES DSP, a weighted average that filters
+	// out some high frequency content
+	INTERPOLATION_SNES,
+	// A polynomial spline approximation that preserves endpoints and estimated
+	// slopes at those endpoints, based on 4 samples' worth of data like the
+	// SNES method.
+	INTERPOLATION_CUBIC,
+	// A straight line is drawn between every pair of points. Similar to the
+	// original interpolation code used by ebmused.
+	INTERPOLATION_LINEAR
+} interpolation_method = INTERPOLATION_SNES;
 int mixrate = 44100;
 int bufsize = 2205;
 int chmask = 255;
@@ -153,6 +168,7 @@ static BOOL do_envelope(struct channel_state *c, int mixing_rate) {
 }
 
 static short get_interpolated_sample(const short *sample_data, int inter_sample_pos) {
+	// For the "accurate" "Gaussian" SNES DSP interpolation method
 	static const short interpolation_table[512] = {
 		0x000,0x000,0x000,0x000,0x000,0x000,0x000,0x000,0x000,0x000,0x000,0x000,0x000,0x000,0x000,0x000,
 		0x001,0x001,0x001,0x001,0x001,0x001,0x001,0x001,0x001,0x001,0x001,0x002,0x002,0x002,0x002,0x002,
@@ -188,22 +204,93 @@ static short get_interpolated_sample(const short *sample_data, int inter_sample_
 		0x513,0x514,0x514,0x515,0x516,0x516,0x517,0x517,0x517,0x518,0x518,0x518,0x518,0x518,0x519,0x519
 	};
 
-	short weights[4];
-	unsigned char i = inter_sample_pos >> (15 - 8);
-	weights[0] = interpolation_table[255 - i];
-	weights[1] = interpolation_table[511 - i];
-	weights[2] = interpolation_table[256 + i];
-	weights[3] = interpolation_table[  0 + i];
 	int s = 0;
-	// fullsnes uses >> 10, because it treats the BRR output as 15-bit
-	s += sample_data[0] * weights[0] >> 11;
-	s += sample_data[1] * weights[1] >> 11;
-	s += sample_data[2] * weights[2] >> 11;
-	s = (short)s;
-	s += sample_data[3] * weights[3] >> 11;
-	if (s > 0x7FFF) s = 0x7FFF;
-	else if (s < -0x8000) s = -0x8000;
-	s &= ~1;
+	switch(interpolation_method) {
+	default:
+		// If this happens in a debug build, catch it, because it's a mistake
+		assert(0 && "unimplemented interpolation method");
+		// Otherwise... might as well just use a good default
+		// fallthrough
+	case INTERPOLATION_SNES: {
+		unsigned char i = inter_sample_pos >> (15 - 8);
+		short weights[4] = {
+			interpolation_table[255 - i],
+			interpolation_table[511 - i],
+			interpolation_table[256 + i],
+			interpolation_table[  0 + i]
+		};
+		// Use an unsigned short to ensure wrapping behavior
+		unsigned short r = 0;
+
+		// fullsnes uses >> 10, because it treats the BRR output as 15-bit, but we decode to
+		// 16-bit PCM with the bottom bit clear
+		r += sample_data[0] * weights[0] >> 11;
+		r += sample_data[1] * weights[1] >> 11;
+		r += sample_data[2] * weights[2] >> 11;
+		s = (short)r + (sample_data[3] * weights[3] >> 11);
+		s =  s >  32767 ?  32767 :
+		    (s < -32768 ? -32768 : s);
+		}
+		break;
+	case INTERPOLATION_CUBIC: {
+		// Create a cubic curve starting at sample_data[1] (t = 0) and ending at sample_data[2] (t = 1),
+		// also specifying the slopes at both of those points using a two-sided average.
+		// Then use that cubic curve to estimate the point between sample_data[1] and sample_data[2].
+		double t_power[4] = {
+			[0] = 1.,
+			[1] = inter_sample_pos / (double)(1 << 15),
+			[2] = inter_sample_pos * inter_sample_pos / (double)(1 << 30),
+			[3] = (long long)inter_sample_pos * inter_sample_pos * inter_sample_pos / (double)(1LL << 45)
+		};
+
+		double start = sample_data[1];
+		double end = sample_data[2];
+		double start_slope = (sample_data[2] - sample_data[0]) / 2.;
+		double end_slope = (sample_data[3] - sample_data[1]) / 2.;
+
+		// We add together four cubic equations that only affect the position or slope of either
+		// the starting point or the ending point to find the right cubic equation for the sample.
+		// coefficients[0] is the sum of all the t^0 (constant) terms,
+		// coefficients[1] is the sum of all the t^1 terms, etc.
+		// The equations are:
+		//  2t^3 - 3t^2 + 0t + 1, scaled by the desired starting position
+		// at t = 0, this equals 1 and has a slope of 0
+		// at t = 1, this equals 0 and has a slope of 0
+		//  1t^3 - 2t^2 + 1t + 0, scaled by the desired starting slope
+		// at t = 0, this equals 0 and has a slope of 1
+		// at t = 1, this equals 0 and has a slope of 0
+		// -2t^3 + 3t^2 + 0t + 0, scaled by the desired ending position
+		// at t = 0, this equals 0 and has a slope of 0
+		// at t = 1, this equals 1 and has a slope of 0
+		//  1t^3 - 1t^2 + 0t + 0, scaled by the desired ending slope
+		// at t = 0, this equals 0 and has a slope of 0
+		// at t = 1, this equals 0 and has a slope of 1
+		double coefficients[4] = {
+			[0] =  1. * start,
+			[1] =               1. * start_slope,
+			[2] = -3. * start - 2. * start_slope + 3. * end - 1. * end_slope,
+			[3] =  2. * start + 1. * start_slope - 2. * end + 1. * end_slope
+		};
+
+		double r = t_power[0] * coefficients[0] + t_power[1] * coefficients[1]
+		         + t_power[2] * coefficients[2] + t_power[3] * coefficients[3];
+		assert(isfinite(r));
+		s =  r >  32767. ?  32767 :
+		    (r < -32768. ? -32768 : (int)r);
+		}
+		break;
+	case INTERPOLATION_LINEAR:
+	    // Slope, or rise/run, is (sample_data[2] - sample_data[1]) / (1 - 0)
+	    // y-intercept is sample_data[1]
+		s = sample_data[1] + (((long long)sample_data[2] - sample_data[1]) * inter_sample_pos >> 15);
+		s =  s >  32767 ?  32767 :
+		    (s < -32768 ? -32768 : s);
+		break;
+	}
+
+	// The interpolation result is also 15-bit, treated by us as 16-bit.
+	s >>= 1;
+	s *= 2;
 	return (short)s;
 }
 
