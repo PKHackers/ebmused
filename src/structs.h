@@ -7,6 +7,7 @@ typedef int BOOL;
 #define TRUE 1
 typedef void *HWND;
 #endif
+#define INST_MAX_POLYPHONY 16
 
 // structure used for track or subroutine
 // "size" does not include the ending [00] byte
@@ -98,7 +99,7 @@ struct song_state {
 		short sustain_level;
 		short sustain_rate;
 		short gain_rate;
-	} chan[16];
+	} chan[INST_MAX_POLYPHONY];
 	signed char transpose;
 	struct slider volume;
 	struct slider tempo;

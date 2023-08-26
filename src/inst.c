@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #define _WIN32_WINNT 0x0500 // for VK_OEM_PERIOD ?????
 #define WIN32_LEAN_AND_MEAN
@@ -39,32 +40,14 @@ static struct window_template inst_list_template = {
 };
 
 static unsigned char valid_insts[MAX_INSTRUMENTS];
-static int cnote[16];
-static char sustained[16] = { 0 };
+static int cnote[INST_MAX_POLYPHONY];
+static char sustained[INST_MAX_POLYPHONY] = { 0 };
 static char sustain = FALSE;
 static struct history {
 	struct history *prev;
 	struct history *next;
-}  channel_order[16] = {
-	// TODO: Construct this on tab init so the polyphony can change from one location.
-	{ &channel_order[15], &channel_order[1] },
-	{ &channel_order[0] , &channel_order[2] },
-	{ &channel_order[1], &channel_order[3] },
-	{ &channel_order[2], &channel_order[4] },
-	{ &channel_order[3], &channel_order[5] },
-	{ &channel_order[4], &channel_order[6] },
-	{ &channel_order[5], &channel_order[7] },
-	{ &channel_order[6], &channel_order[8] },
-	{ &channel_order[7], &channel_order[9] },
-	{ &channel_order[8], &channel_order[10] },
-	{ &channel_order[9], &channel_order[11] },
-	{ &channel_order[10], &channel_order[12] },
-	{ &channel_order[11], &channel_order[13] },
-	{ &channel_order[12], &channel_order[14] },
-	{ &channel_order[13], &channel_order[15] },
-	{ &channel_order[14], &channel_order[0] },
-};
-struct history* oldest_chan = channel_order;
+}  channel_order[INST_MAX_POLYPHONY] = { 0 };
+static struct history* oldest_chan = channel_order;
 
 int note_from_key(int key, BOOL shift) {
 	if (key == VK_OEM_PERIOD) return 0x48; // continue
@@ -98,11 +81,13 @@ static void set_latest_channel(int ch) {
 	if (&channel_order[ch] == oldest_chan) {
 		oldest_chan = oldest_chan->next;
 	} else {
+		// Verify channel_order items are defined. (They should also form a complete loop.)
+		assert(channel_order[ch].prev && channel_order[ch].next);
+
 		// Remove this item from the linked list.
-		if (channel_order[ch].prev && channel_order[ch].next) {
-			channel_order[ch].prev->next = channel_order[ch].next;
-			channel_order[ch].next->prev = channel_order[ch].prev;
-		}
+		channel_order[ch].prev->next = channel_order[ch].next;
+		channel_order[ch].next->prev = channel_order[ch].prev;
+
 		// Move it to the end of the linked list
 		channel_order[ch].next = oldest_chan ? oldest_chan : (oldest_chan = &channel_order[ch]);
 		channel_order[ch].prev = oldest_chan->prev ? oldest_chan->prev : (oldest_chan->prev = &channel_order[ch]);
@@ -132,7 +117,7 @@ static void sustain_on() {
 
 static void sustain_off() {
 	sustain = FALSE;
-	for (int ch = 0; ch < 16; ch++) {
+	for (int ch = 0; ch < INST_MAX_POLYPHONY; ch++) {
 		if (sustained[ch]) {
 			channel_off(ch);
 		}
@@ -140,13 +125,14 @@ static void sustain_off() {
 }
 
 static void note_off(int note) {
-	for (int ch = 0; ch < 16; ch++)
+	for (int ch = 0; ch < INST_MAX_POLYPHONY; ch++) {
 		if (cnote[ch] == note) {
 			if (sustain)
 				sustained[ch] = TRUE;
 			else
 				channel_off(ch);
 		}
+	}
 	draw_square(note, GetStockObject(WHITE_BRUSH));
 }
 
@@ -264,7 +250,13 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 	switch (uMsg) {
 	case WM_CREATE: {
 		prev_chmask = chmask;
-		chmask = 0xFFFF;
+
+		#if INST_MAX_POLYPHONY > 31
+			#error INST_MAX_POLYPHONY must be less than 32 to prevent left-shift overflowing.
+		#else
+			chmask = (1u << INST_MAX_POLYPHONY) - 1;
+		#endif
+
 		WPARAM fixed = (WPARAM)fixed_font();
 		char buf[40];
 
@@ -311,8 +303,10 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		start_playing();
 		timer_speed = 0;
 		memset(&state.chan, 0, sizeof state.chan);
-		for (int ch = 0; ch < 16; ch++) {
+		for (int ch = 0; ch < INST_MAX_POLYPHONY; ch++) {
 			state.chan[ch].samp_pos = -1;
+			channel_order[ch].next = &channel_order[(ch + 1) % INST_MAX_POLYPHONY];
+			channel_order[ch].prev = &channel_order[(ch - 1 + INST_MAX_POLYPHONY) % INST_MAX_POLYPHONY];
 		}
 
 		// Restore the previous instrument selection
