@@ -128,7 +128,7 @@ STYLE 0
 CAPTION "About"
 FONT 8, "MS Shell Dlg"
 BEGIN
-	LTEXT "EarthBound Music Editor v2.4.0\r\nReleased August 27, 2021\r\nProgrammed by Goplat\r\nAdditional programming by BlueStone, phoenixbound, and vince94\r\n", 0,
+	LTEXT "EarthBound Music Editor v2.4.0\r\nReleased August 27, 2021\r\nProgrammed by Goplat\r\nAdditional programming by BlueStone, phoenixbound, and livvy94\r\n", 0,
 	                                                   5,  5, 215, 55
 	DEFPUSHBUTTON "Fuzzy Pickles!", IDOK,            130,  8,  60, 14
 END
