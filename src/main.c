@@ -314,7 +314,7 @@ enum SPC_RESULTS try_parse_spc(const BYTE* spc, struct spcDetails *out_details) 
 
 static void import_spc() {
 	char *file = open_dialog(GetOpenFileName,
-		"SPC Savestates (*.spc)\0*.spc\0All Files\0*.*\0",
+		"SPC700 ARAM Dumps (*.spc)\0*.spc\0All Files\0*.*\0",
 		NULL,
 		OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
 	if (!file) return;
