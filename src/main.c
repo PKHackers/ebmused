@@ -53,9 +53,9 @@ static const char *const tab_class[NUM_TABS] = {
 	"ebmused_packs"
 };
 static const char *const tab_name[NUM_TABS] = {
-	"Song Table",
+	"BGM Table",
 	"Instruments",
-	"Sequence Editor",
+	"Tracker",
 	"Data Packs"
 };
 LRESULT CALLBACK BGMListWndProc(HWND, UINT, WPARAM, LPARAM);

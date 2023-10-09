@@ -50,15 +50,15 @@ static const struct control_desc bgm_list_controls[] = {
 	{ "Edit",   440,130, 25, 20, NULL, IDC_BGM_IPACK_2, WS_BORDER }, //(ROM) Secondary Pack textbox
 	{ "Edit",   530,130, 25, 20, NULL, IDC_CUR_IPACK_1, WS_BORDER }, //(Current) Main Pack textbox
 	{ "Edit",   560,130, 25, 20, NULL, IDC_CUR_IPACK_2, WS_BORDER }, //(Current) Secondary Pack textbox
-	{ "Static", 325,157, 80, 20, "Song pack:", 0, SS_RIGHT },
-	{ "Edit",   410,155, 25, 20, NULL, IDC_BGM_SPACK, WS_BORDER }, //(ROM) Song Pack textbox
-	{ "Edit",   530,155, 25, 20, NULL, IDC_CUR_SPACK, WS_BORDER }, //(Current) Song Pack textbox
-	{ "Static", 325,182, 80, 20, "Song to play:", 0, SS_RIGHT },
-	{ "Edit",   410,180, 55, 20, NULL, IDC_BGM_SPCADDR, WS_BORDER }, //(ROM) Song ARAM textbox
-	{"ComboBox",530,180, 55, 200, NULL, IDC_CUR_SPCADDR, CBS_DROPDOWNLIST | WS_VSCROLL }, //(Current) Song ARAM ComboBox
+	{ "Static", 325,157, 80, 20, "Music pack:", 0, SS_RIGHT },
+	{ "Edit",   410,155, 25, 20, NULL, IDC_BGM_SPACK, WS_BORDER }, //(ROM) Music Pack textbox
+	{ "Edit",   530,155, 25, 20, NULL, IDC_CUR_SPACK, WS_BORDER }, //(Current) Music Pack textbox
+	{ "Static", 325,182, 80, 20, "Start address:", 0, SS_RIGHT },
+	{ "Edit",   410,180, 55, 20, NULL, IDC_BGM_SPCADDR, WS_BORDER }, //(ROM) Music ARAM textbox
+	{"ComboBox",530,180, 55, 200, NULL, IDC_CUR_SPCADDR, CBS_DROPDOWNLIST | WS_VSCROLL }, //(Current) Music ARAM ComboBox
 	{ "Button", 485,130, 25, 30, "-->", IDC_LOAD_BGM, 0 },
 	{ "Button", 485,170, 25, 30, "<--", IDC_CHANGE_BGM, 0 },
-	{ "Button", 353,205,112, 20, "Update Song Table", IDC_SAVE_INFO, 0 },
+	{ "Button", 353,205,112, 20, "Update BGM Table", IDC_SAVE_INFO, 0 },
 	{ "Edit",   320,250,230, 20, NULL, IDC_SEARCH_TEXT, WS_BORDER },
 	{ "Button", 560,250, 60, 20, "Search", IDC_SEARCH, 0 },
 	{ "Edit",   320,275,230, 20, NULL, IDC_TITLE, WS_BORDER | ES_AUTOHSCROLL },
@@ -253,7 +253,7 @@ write_error:	MessageBox2(strerror(errno), "Save", MB_ICONERROR);
 			song_address[selected_bgm] = new_spc_address;
 			fflush(rom);
 			sprintf(buf, "Info for BGM %02X saved!", selected_bgm + 1);
-			MessageBox2(buf, "Song Table Updated", MB_OK);
+			MessageBox2(buf, "BGM Table Updated", MB_OK);
 			break;
 		}
 		case IDC_CUR_IPACK_1:

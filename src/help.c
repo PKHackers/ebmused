@@ -103,7 +103,7 @@ const char help_text[] = {
 "[F8 time lvol rvol]\r\n"
 "	Slide echo volumes (not implemented)\r\n"
 "[F9 start length note]\r\n"
-"	Note portamento. This goes after a note and only affects that note.\r\n"
+"	Pitch bend\r\n"
 "[FA instrument]\r\n"
 "	Set the first instrument to be used by CA-DF codes\r\n"
 "	In EarthBound, this is always set to the first instrument of the\r\n"
