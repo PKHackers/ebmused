@@ -1,6 +1,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <shellapi.h>
 #include "ebmusv2.h"
+#include "id.h"
 
 #define IDC_HELPTEXT 1
 
@@ -141,10 +143,59 @@ LRESULT CALLBACK CodeListWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 	return 0;
 }
 
-BOOL CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	if (uMsg == WM_COMMAND && LOWORD(wParam) == IDOK) {
-		EndDialog(hWnd, IDOK);
-		return TRUE;
+static WNDPROC HomepageLinkWndProc;
+static LRESULT CALLBACK HomepageLinkProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	switch (uMsg) {
+		case WM_SETCURSOR:
+			HCURSOR hCursor = LoadCursor(NULL, IDC_HAND);
+			if (NULL == hCursor) hCursor = LoadCursor(NULL, IDC_ARROW);
+			SetCursor(hCursor);
+			return TRUE;
 	}
-	return FALSE;
+
+	return CallWindowProc(HomepageLinkWndProc, hWnd, uMsg, wParam, lParam);
+}
+
+BOOL CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	switch(uMsg) {
+		case WM_INITDIALOG:
+			HWND hwndLink = GetDlgItem(hWnd, IDC_HOMEPAGELINK);
+			HomepageLinkWndProc = (WNDPROC)SetWindowLongPtr(hwndLink, GWLP_WNDPROC, (LONG_PTR)HomepageLinkProc);
+
+			// Set font to underlined
+			HFONT hFont = (HFONT)SendMessage(hwndLink, WM_GETFONT, 0, 0);
+			LOGFONT lf;
+			GetObject(hFont, sizeof(lf), &lf);
+			lf.lfUnderline = TRUE;
+			HFONT hUnderlinedFont = CreateFontIndirect(&lf);
+			SendMessage(hwndLink, WM_SETFONT, (WPARAM)hUnderlinedFont, FALSE);
+			SetTextColor(hwndLink, RGB(0, 0, 192));
+
+			break;
+		case WM_COMMAND:
+			switch(LOWORD(wParam)) {
+				case IDC_HOMEPAGELINK:
+					if (HIWORD(wParam) == BN_CLICKED) {
+						ShellExecute(hWnd, "open", "https://github.com/PKHackers/ebmused/", NULL, NULL, SW_SHOWNORMAL);
+					}
+					break;
+				case IDOK:
+					EndDialog(hWnd, IDOK);
+					break;
+			}
+			break;
+		case WM_CTLCOLORSTATIC:
+			if ((HWND)lParam == GetDlgItem(hWnd, IDC_HOMEPAGELINK))
+			{
+				SetBkMode((HDC)wParam, TRANSPARENT);
+				SetTextColor((HDC)wParam, RGB(0, 0, 192));
+				return (BOOL)GetSysColorBrush(COLOR_3DFACE);
+			}
+			return FALSE;
+			break;
+		default:
+			return FALSE;
+	}
+
+	return TRUE;
 }
