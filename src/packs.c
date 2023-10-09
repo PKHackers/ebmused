@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ebmusv2.h"
+#include "misc.h"
 
 const DWORD pack_orig_crc[] = {
 	0x35994B97, 0xDB04D065, 0xC13D8165, 0xEEFF028E, 0x5330392D, 0x705AEBBC,

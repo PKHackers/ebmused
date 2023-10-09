@@ -1,9 +1,8 @@
 #define _WIN32_WINNT 0x600
 #include <stdio.h>
 #include <stdlib.h>
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include "ebmusv2.h"
+#include "misc.h"
 
 void enable_menu_items(const BYTE *list, int flags) {
 	while (*list) EnableMenuItem(hmenu, *list++, flags);

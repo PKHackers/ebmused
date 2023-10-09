@@ -3,6 +3,7 @@
 #include <shellapi.h>
 #include "ebmusv2.h"
 #include "id.h"
+#include "misc.h"
 
 #define IDC_HELPTEXT 1
 
