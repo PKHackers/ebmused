@@ -135,7 +135,7 @@ void decode_samples(const unsigned char *ptrtable) {
 		} else
 			sa->loop_len = 0;
 
-		size_t allocation_size = sizeof(int16_t) * (sa->length + 1);
+		size_t allocation_size = sizeof(int16_t) * (sa->length + 3);
 
 		int16_t *p = malloc(allocation_size);
 		if (!p) {
@@ -172,7 +172,7 @@ void decode_samples(const unsigned char *ptrtable) {
 				if (full_loop_len == -1) {
 					needs_another_loop = TRUE;
 					ptrdiff_t diff = p - sa->data;
-					int16_t *new_stuff = realloc(sa->data, (sa->length + sa->loop_len + 1) * sizeof(int16_t));
+					int16_t *new_stuff = realloc(sa->data, (sa->length + sa->loop_len + 3) * sizeof(int16_t));
 					if (new_stuff == NULL) {
 						printf("realloc failed in BRR decoding (sn: %02X)\n", sn);
 						// TODO What do we do now? Replace this with something better
@@ -201,8 +201,16 @@ void decode_samples(const unsigned char *ptrtable) {
 			printf("Sample %02X took too many iterations to get into a cycle\n", sn);
 		}
 
-		// Put an extra sample at the end for easier interpolation
-		*p = sa->loop_len != 0 ? sa->data[sa->length - sa->loop_len] : 0;
+		// Put 3 extra samples at the end for easier interpolation
+		if (sa->loop_len != 0) {
+			p[0] = sa->data[sa->length - sa->loop_len + 0];
+			p[1] = sa->data[sa->length - sa->loop_len + 1];
+			p[2] = sa->data[sa->length - sa->loop_len + 2];
+		} else {
+			p[0] = 0;
+			p[1] = 0;
+			p[2] = 0;
+		}
 	}
 }
 
