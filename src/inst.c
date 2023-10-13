@@ -188,7 +188,7 @@ LRESULT CALLBACK InstTestWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 
 		for (int i = 0; i < 12; i++) {
 			const int x =
-				(int[]){ 6, 5, 6, 5, 6, 6, 5, 6, 5, 6, 5, 6 }[i]
+				(int[12]){ 6, 5, 6, 5, 6, 6, 5, 6, 5, 6, 5, 6 }[i]
 				+ 20 * (i + 1);
 			TextOut(hdc, scale_x(x), 0,
 				"CCDDEFFGGAAB" + i, 1);
