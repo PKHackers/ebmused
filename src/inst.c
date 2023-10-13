@@ -23,15 +23,15 @@ static int selectedInstrument = 0;
 
 static const struct control_desc inst_list_controls[] = {
 	{ "Static",  10, 10,100, 20, "Sample Directory:", 0, 0 },
-	{ "Static",  13, 30,180, 20, "    Strt Loop Size", 1, 0 },
+	{ "Static",  15, 30,180, 20, "    Strt Loop Size", 1, 0 },
 	{ "ListBox", 10, 50,180,-60, NULL, IDC_SAMPLIST, WS_BORDER | WS_VSCROLL }, // Sample Directory ListBox
 
 	{ "Static", 200, 10,100, 20, "Instrument Config:", 0, 0 },
-	{ "Static", 203, 30,160, 20, "S#  ADSR/Gain Tuning", 3, 0 },
+	{ "Static", 205, 30,160, 20, "S#  ADSR/Gain Tuning", 5, 0 },
 	{ "ListBox",200, 50,180,-60, NULL, IDC_INSTLIST, WS_BORDER | LBS_NOTIFY | WS_VSCROLL }, // Instrument Config ListBox
 
 	{ "Static", 400, 10,100, 20, "Instrument test:", 0, 0},
-	{ "ebmused_insttest",400, 30,260,140, NULL, 3, 0 },
+	{ "ebmused_insttest",400, 30,260,140, NULL, 5, 0 },
 	{ "Static", 400, 180,100, 20, "MIDI In Device:", 0, 0},
 	{ "ComboBox", 400, 200, 140, 200, NULL, IDC_MIDIINCOMBO, CBS_DROPDOWNLIST | WS_VSCROLL },
 };
@@ -161,9 +161,20 @@ static LRESULT CALLBACK InstListWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 	return CallWindowProc(ListBoxWndProc, hWnd, uMsg, wParam, lParam);
 }
 
+static HFONT hScaledFont;
+
 LRESULT CALLBACK InstTestWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg) {
-	case WM_CREATE: insttest = hWnd; break;
+	case WM_CREATE:
+		insttest = hWnd;
+		LOGFONT lf;
+		GetObject(default_font(), sizeof(LOGFONT), &lf);
+		lf.lfHeight = (int)(lf.lfHeight * 0.8);
+		hScaledFont = CreateFontIndirect(&lf);
+		break;
+	case WM_DESTROY:
+		DeleteObject(hScaledFont);
+	break;
 	case WM_ERASEBKGND: {
 		DefWindowProc(hWnd, uMsg, wParam, lParam);
 		HDC hdc = (HDC)wParam;
@@ -177,10 +188,18 @@ LRESULT CALLBACK InstTestWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 
 		for (int i = 0; i < 12; i++) {
 			const int x =
-				(int[]){ 6, 3, 6, 3, 6, 6, 3, 6, 3, 6, 3, 6 }[i]
+				(int[]){ 6, 5, 6, 5, 6, 6, 5, 6, 5, 6, 5, 6 }[i]
 				+ 20 * (i + 1);
 			TextOut(hdc, scale_x(x), 0,
-				"C C#D D#E F F#G G#A A#B " + 2*i, 2);
+				"CCDDEFFGGAAB" + i, 1);
+		}
+
+		SelectObject(hdc, hScaledFont);
+		SetBkMode(hdc, TRANSPARENT);
+		for (int i = 0; i < 12; i++) {
+			const int x = 13 + 20 * (i + 1);
+			TextOut(hdc, scale_x(x), 0,
+				" # #  # # # " + i, 1);
 		}
 
 		Rectangle(hdc, scale_x(19), scale_y(19), scale_x(260), scale_y(140));
