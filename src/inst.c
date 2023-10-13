@@ -24,16 +24,16 @@ static int selectedInstrument = 0;
 static const struct control_desc inst_list_controls[] = {
 	{ "Static",  10, 10,100, 20, "Sample Directory:", 0, 0 },
 	{ "Static",  13, 30,180, 20, "    Strt Loop Size", 1, 0 },
-	{ "ListBox", 10, 50,180,-60, NULL, IDC_SAMPLIST, WS_BORDER | WS_VSCROLL }, //Sample Directory ListBox
+	{ "ListBox", 10, 50,180,-60, NULL, IDC_SAMPLIST, WS_BORDER | WS_VSCROLL }, // Sample Directory ListBox
 
 	{ "Static", 200, 10,100, 20, "Instrument Config:", 0, 0 },
 	{ "Static", 203, 30,160, 20, "S#  ADSR/Gain Tuning", 3, 0 },
-	{ "ListBox",200, 50,180,-60, NULL, IDC_INSTLIST, WS_BORDER | LBS_NOTIFY | WS_VSCROLL }, //Instrument Config ListBox
+	{ "ListBox",200, 50,180,-60, NULL, IDC_INSTLIST, WS_BORDER | LBS_NOTIFY | WS_VSCROLL }, // Instrument Config ListBox
 
 	{ "Static", 400, 10,100, 20, "Instrument test:", 0, 0},
-	{ "ebmused_insttest",400, 30,140,260, NULL, 3, 0 },
-	{ "Static", 400, 300,100, 20, "MIDI In Device:", 0, 0},
-	{ "ComboBox", 400, 320, 140, 200, NULL, IDC_MIDIINCOMBO, CBS_DROPDOWNLIST | WS_VSCROLL },
+	{ "ebmused_insttest",400, 30,260,140, NULL, 3, 0 },
+	{ "Static", 400, 180,100, 20, "MIDI In Device:", 0, 0},
+	{ "ComboBox", 400, 200, 140, 200, NULL, IDC_MIDIINCOMBO, CBS_DROPDOWNLIST | WS_VSCROLL },
 };
 static struct window_template inst_list_template = {
 	inst_list_template_num, inst_list_template_lower, 0, 0, inst_list_controls
@@ -62,12 +62,27 @@ int note_from_key(int key, BOOL shift) {
 
 static void draw_square(int note, HBRUSH brush) {
 	HDC hdc = GetDC(insttest);
-	int x = (note / 12 + 1) * 20;
-	int y = (note % 12 + 1) * 20;
+	int x = (note % 12 + 1) * 20;
+	int y = (6 - note / 12) * 20;
 	RECT rc = { scale_x(x), scale_y(y), scale_x(x + 20) - 1, scale_y(y + 20) - 1 };
 	FillRect(hdc, &rc, brush);
 	ReleaseDC(insttest, hdc);
 }
+
+static int note_colors[12] = {
+	WHITE_BRUSH,
+	DKGRAY_BRUSH,
+	WHITE_BRUSH,
+	DKGRAY_BRUSH,
+	WHITE_BRUSH,
+	WHITE_BRUSH,
+	DKGRAY_BRUSH,
+	WHITE_BRUSH,
+	DKGRAY_BRUSH,
+	WHITE_BRUSH,
+	DKGRAY_BRUSH,
+	WHITE_BRUSH
+};
 
 static void note_off(int note) {
 	for (int ch = 0; ch < 8; ch++)
@@ -75,7 +90,7 @@ static void note_off(int note) {
 			state.chan[ch].note_release = 0;
 			state.chan[ch].next_env_state = ENV_STATE_KEY_OFF;
 		}
-	draw_square(note, GetStockObject(WHITE_BRUSH));
+	draw_square(note, GetStockObject(note_colors[note % 12]));
 }
 
 static void note_on(int note, int velocity) {
@@ -153,20 +168,32 @@ LRESULT CALLBACK InstTestWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		DefWindowProc(hWnd, uMsg, wParam, lParam);
 		HDC hdc = (HDC)wParam;
 		set_up_hdc(hdc);
-		for (char o = '1'; o <= '6'; o++)
-			TextOut(hdc, scale_x(20 * (o - '0')), 0, &o, 1);
-		for (int i = 0; i < 12; i++)
-			TextOut(hdc, 0, scale_y(20 * (i + 1)), "C C#D D#E F F#G G#A A#B " + 2*i, 2);
-		Rectangle(hdc, scale_x(19), scale_y(19), scale_x(140), scale_y(260));
+		// Most of these magic offsets were eyeballed 👀
+		for (char o = '1'; o <= '6'; o++) {
+			const int y = 2 + 20 * ('7' - o);
+			TextOut(hdc, 0, scale_y(y),
+				&o, 1);
+		}
+
+		for (int i = 0; i < 12; i++) {
+			const int x =
+				(int[]){ 6, 3, 6, 3, 6, 6, 3, 6, 3, 6, 3, 6 }[i]
+				+ 20 * (i + 1);
+			TextOut(hdc, scale_x(x), 0,
+				"C C#D D#E F F#G G#A A#B " + 2*i, 2);
+		}
+
+		Rectangle(hdc, scale_x(19), scale_y(19), scale_x(260), scale_y(140));
 		reset_hdc(hdc);
+		for (int i=0; i<72; i++) draw_square(i, GetStockObject(note_colors[i % 12]));
 		return 1;
 	}
 	case WM_LBUTTONDOWN:
 	case WM_LBUTTONUP: {
-		int octave = LOWORD(lParam) / scale_x(20) - 1;
-		if (octave < 0 || octave > 5) break;
-		int note = HIWORD(lParam) / scale_y(20) - 1;
+		int note = LOWORD(lParam) / scale_x(20) - 1;
 		if (note < 0 || note > 11) break;
+		int octave = 6 - HIWORD(lParam) / scale_y(20);
+		if (octave < 0 || octave > 5) break;
 		note += 12 * octave;
 		if (uMsg == WM_LBUTTONDOWN)
 			note_on(note, 24);
