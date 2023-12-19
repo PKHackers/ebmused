@@ -24,15 +24,15 @@ static int selectedInstrument = 0;
 
 static const struct control_desc inst_list_controls[] = {
 	{ "Static",  10, 10,100, 20, "Sample Directory:", 0, 0 },
-	{ "Static",  15, 30,180, 20, "    Strt Loop Size", 1, 0 },
+	{ "Static",  15, 30,180, 20, "    Strt Loop Size", IDC_SAMPLIST_CAPTION, 0 },
 	{ "ListBox", 10, 50,180,-60, NULL, IDC_SAMPLIST, WS_BORDER | WS_VSCROLL }, // Sample Directory ListBox
 
 	{ "Static", 200, 10,100, 20, "Instrument Config:", 0, 0 },
-	{ "Static", 205, 30,160, 20, "S#  ADSR/Gain Tuning", 3, 0 },
+	{ "Static", 205, 30,160, 20, "S#  ADSR/Gain Tuning", IDC_INSTLIST_CAPTION, 0 },
 	{ "ListBox",200, 50,180,-60, NULL, IDC_INSTLIST, WS_BORDER | LBS_NOTIFY | WS_VSCROLL }, // Instrument Config ListBox
 
 	{ "Static", 400, 10,100, 20, "Instrument test:", 0, 0},
-	{ "ebmused_insttest",400, 30,260,140, NULL, 3, 0 },
+	{ "ebmused_insttest",400, 30,260,140, NULL, IDC_INSTLIST_CAPTION, 0 },
 	{ "Static", 400, 180,100, 20, "MIDI In Device:", 0, 0},
 	{ "ComboBox", 400, 200, 140, 200, NULL, IDC_MIDIINCOMBO, CBS_DROPDOWNLIST | WS_VSCROLL },
 };
