@@ -46,6 +46,7 @@
 #define IDC_BUFSIZE 4
 
 #define IDD_ABOUT 2
+#define IDC_HOMEPAGELINK 3
 
 #define IDD_TRANSPOSE 3
 #define IDC_TRANSPOSE_OFF 3

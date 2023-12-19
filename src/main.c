@@ -20,6 +20,7 @@
 #include <windows.h>
 #include <commdlg.h>
 #include <commctrl.h>
+#include <mmsystem.h>
 #include "ebmusv2.h"
 #include "misc.h"
 
@@ -54,9 +55,9 @@ static const char *const tab_class[NUM_TABS] = {
 	"ebmused_packs"
 };
 static const char *const tab_name[NUM_TABS] = {
-	"Song Table",
+	"BGM Table",
 	"Instruments",
-	"Sequence Editor",
+	"Tracker",
 	"Data Packs"
 };
 LRESULT CALLBACK BGMListWndProc(HWND, UINT, WPARAM, LPARAM);
@@ -592,7 +593,7 @@ static BOOL validate_playable(void) {
 
 LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg) {
-	case 0x3BB: case 0x3BC: case 0x3BD: // MM_WOM_OPEN, CLOSE, DONE
+	case MM_WOM_OPEN: case MM_WOM_CLOSE: case MM_WOM_DONE:
 		winmm_message(uMsg);
 		break;
 	case WM_CREATE: {

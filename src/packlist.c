@@ -65,8 +65,8 @@ static const struct control_desc pack_list_controls[] = {
 	//Buttons on the right for modifying the pack
 	{ "Button",  290,-55, 118, 20, "Save Changes", IDC_PACK_SAVE, WS_DISABLED }, //Same as Ctrl-S I think
 	{ "Button",  410,-55, 118, 20, "Revert", IDC_PACK_RESET, WS_DISABLED }, //Wipes all changes
-	{ "Button",  290,-30, 78, 20, "New Song", IDC_SONG_NEW, WS_DISABLED }, //adds a new song entry in the current modified pack
-	{ "Button",  370,-30, 78, 20, "Delete Song", IDC_SONG_DEL, WS_DISABLED }, //Deleltes the currently-selected song
+	{ "Button",  290,-30, 78, 20, "New BGM", IDC_SONG_NEW, WS_DISABLED }, //adds a new song entry in the current modified pack
+	{ "Button",  370,-30, 78, 20, "Delete BGM", IDC_SONG_DEL, WS_DISABLED }, //Deleltes the currently-selected song
 	{ "Button",  450,-30, 38, 20, "Up", IDC_SONG_UP, WS_DISABLED }, //Moves the currently-selected song
 	{ "Button",  490,-30, 38, 20, "Down", IDC_SONG_DOWN, WS_DISABLED },
 

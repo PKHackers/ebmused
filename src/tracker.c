@@ -33,12 +33,12 @@ static char cs_title[] = "Channel state (0)";
 
 static const struct control_desc editor_controls[] = {
 // Upper
-	{ "Static",          10, 13, 42, 20, "Patterns:", 0, 0 }, //"Order" label
-	{ "ebmused_order",   56, 10,-420,20, NULL, IDC_ORDER, WS_BORDER }, //Pattern order list
-	{ "Static",        -360, 13, 55, 20, "Loop Song:", IDC_REP_CAPTION, 0 },
-	{ "Edit",          -303, 10, 30, 20, NULL, IDC_REPEAT, WS_BORDER | ES_NUMBER }, //Loop textbox
-	{ "Static",        -266, 13, 40, 20, "Position:", IDC_REP_POS_CAPTION, 0 },
-	{ "Edit",          -223, 10, 30, 20, NULL, IDC_REPEAT_POS, WS_BORDER | ES_NUMBER }, //Loop position textbox
+	{ "Static",          10, 13, 35, 20, "Order:", 0, 0 }, // "Order" label
+	{ "ebmused_order",   50, 10,-420,20, NULL, IDC_ORDER, WS_BORDER }, // Pattern order list
+	{ "Static",        -363, 13, 60, 20, "Loop Count:", IDC_REP_CAPTION, 0 },
+	{ "Edit",          -303, 10, 30, 20, NULL, IDC_REPEAT, WS_BORDER | ES_NUMBER }, // Loop textbox
+	{ "Static",        -268, 13, 45, 20, "Loop To:", IDC_REP_POS_CAPTION, 0 },
+	{ "Edit",          -223, 10, 30, 20, NULL, IDC_REPEAT_POS, WS_BORDER | ES_NUMBER }, // Loop position textbox
 	{ "Static",        -187, 13, 45, 20, "Pattern:", IDC_PAT_LIST_CAPTION, 0 },
 	{ "ComboBox",      -147,  9, 40,300, NULL, IDC_PAT_LIST, CBS_DROPDOWNLIST | WS_VSCROLL },
 	{ "Button",        -100,  9, 30, 20, "Add", IDC_PAT_ADD, 0 },
