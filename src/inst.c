@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #define _WIN32_WINNT 0x0500 // for VK_OEM_PERIOD ?????
 #define WIN32_LEAN_AND_MEAN
@@ -40,7 +41,14 @@ static struct window_template inst_list_template = {
 };
 
 static unsigned char valid_insts[MAX_INSTRUMENTS];
-static int cnote[8];
+static int cnote[INST_MAX_POLYPHONY];
+static char sustained[INST_MAX_POLYPHONY] = { 0 };
+static char sustain = FALSE;
+static struct history {
+	struct history *prev;
+	struct history *next;
+}  channel_order[INST_MAX_POLYPHONY] = { 0 };
+static struct history* oldest_chan = channel_order;
 
 int note_from_key(int key, BOOL shift) {
 	if (key == VK_OEM_PERIOD) return 0x48; // continue
@@ -84,12 +92,64 @@ static int note_colors[12] = {
 	WHITE_BRUSH
 };
 
-static void note_off(int note) {
-	for (int ch = 0; ch < 8; ch++)
-		if (state.chan[ch].samp_pos >= 0 && cnote[ch] == note) {
-			state.chan[ch].note_release = 0;
-			state.chan[ch].next_env_state = ENV_STATE_KEY_OFF;
+// Sets the channel as being the latest one that's been played.
+static void set_latest_channel(int ch) {
+	if (&channel_order[ch] == oldest_chan) {
+		oldest_chan = oldest_chan->next;
+	} else {
+		// Verify channel_order items are defined. (They should also form a complete loop.)
+		assert(channel_order[ch].prev && channel_order[ch].next);
+
+		// Remove this item from the linked list.
+		channel_order[ch].prev->next = channel_order[ch].next;
+		channel_order[ch].next->prev = channel_order[ch].prev;
+
+		// Move it to the end of the linked list
+		channel_order[ch].next = oldest_chan ? oldest_chan : (oldest_chan = &channel_order[ch]);
+		channel_order[ch].prev = oldest_chan->prev ? oldest_chan->prev : (oldest_chan->prev = &channel_order[ch]);
+		oldest_chan->prev->next = &channel_order[ch];
+		oldest_chan->prev = &channel_order[ch];
+	}
+}
+
+// Sets channel as the oldest one to have been played.
+static void set_oldest_channel(int ch) {
+	set_latest_channel(ch);
+	oldest_chan = &channel_order[ch];
+}
+
+static void channel_off(int ch) {
+	if (state.chan[ch].samp_pos >= 0) {
+		state.chan[ch].note_release = 0;
+		state.chan[ch].next_env_state = ENV_STATE_KEY_OFF;
+		set_oldest_channel(ch);
+		sustained[ch] = FALSE;
+	}
+}
+
+static void sustain_on() {
+	sustain = TRUE;
+}
+
+static void sustain_off() {
+	sustain = FALSE;
+	for (int ch = 0; ch < INST_MAX_POLYPHONY; ch++) {
+		if (sustained[ch]) {
+			channel_off(ch);
 		}
+	}
+}
+
+static void note_off(int note) {
+	for (int ch = 0; ch < INST_MAX_POLYPHONY; ch++) {
+		if (cnote[ch] == note) {
+			if (sustain)
+				sustained[ch] = TRUE;
+			else
+				channel_off(ch);
+		}
+	}
+
 	draw_square(note, GetStockObject(note_colors[note % 12]));
 }
 
@@ -98,10 +158,10 @@ static void note_on(int note, int velocity) {
 	if (sel < 0) return;
 	int inst = valid_insts[sel];
 
-	int ch;
-	for (ch = 0; ch < 8; ch++)
-		if (state.chan[ch].samp_pos < 0) break;
-	if (ch == 8) return;
+	int ch = oldest_chan - channel_order;
+	set_latest_channel(ch);
+	sustained[ch] = FALSE;
+
 	cnote[ch] = note;
 	struct channel_state *c = &state.chan[ch];
 	set_inst(&state, c, inst);
@@ -123,19 +183,27 @@ static void CALLBACK MidiInProc(HMIDIIN handle, UINT wMsg, DWORD_PTR dwInstance,
 			param1 = (dwParam1 >> 8) & 0xFF,
 			param2 = (dwParam1 >> 16) & 0xFF;
 
-		if ((eventType & 0x80) && eventType < 0xF0) {	// If not a system exclusive MIDI message
+		if ((eventType & 0x80) && eventType < 0xF0) { // If not a system exclusive MIDI message
 			switch (eventType & 0xF0) {
 			case 0xC0:	// Instrument change event
 				SendMessage(instlist, LB_SETCURSEL, param1, 0);
 				break;
-			case 0x90:	// Note On event
+			case 0x90: // Note On event
 				if (param2 > 0)
 					note_on(param1 + (octave - 4)*12, param2/2);
 				else
 					note_off(param1 + (octave - 4)*12);
 				break;
-			case 0x80:	// Note Off event
+			case 0x80: // Note Off event
 					note_off(param1 + (octave - 4)*12);
+				break;
+			case 0xB0: // Control change
+				if (param1 == 64) { // Sustain pedal
+					if (param2 >= 64)
+						sustain_on();
+					else
+						sustain_off();
+				}
 				break;
 			}
 		}
@@ -230,6 +298,13 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 	switch (uMsg) {
 	case WM_CREATE: {
 		prev_chmask = chmask;
+
+		#if INST_MAX_POLYPHONY > 31
+			#error INST_MAX_POLYPHONY must be less than 32 to prevent left-shift overflowing.
+		#else
+			chmask = (1u << INST_MAX_POLYPHONY) - 1;
+		#endif
+
 		WPARAM fixed = (WPARAM)fixed_font();
 		char buf[40];
 
@@ -276,8 +351,10 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		start_playing();
 		timer_speed = 0;
 		memset(&state.chan, 0, sizeof state.chan);
-		for (int ch = 0; ch < 8; ch++) {
+		for (int ch = 0; ch < INST_MAX_POLYPHONY; ch++) {
 			state.chan[ch].samp_pos = -1;
+			channel_order[ch].next = &channel_order[(ch + 1) % INST_MAX_POLYPHONY];
+			channel_order[ch].prev = &channel_order[(ch - 1 + INST_MAX_POLYPHONY) % INST_MAX_POLYPHONY];
 		}
 
 		// Restore the previous instrument selection
