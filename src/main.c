@@ -358,6 +358,8 @@ static void import_spc() {
 			}
 
 			initialize_state();
+			cur_song.changed = TRUE;
+			save_cur_song_to_pack();
 			SendMessage(tab_hwnd[current_tab], WM_SONG_IMPORTED, 0, 0);
 		} else {
 			// Restore SPC state and samples
