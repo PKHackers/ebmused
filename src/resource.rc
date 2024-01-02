@@ -128,8 +128,7 @@ STYLE 0
 CAPTION "About"
 FONT 8, "MS Shell Dlg"
 BEGIN
-	LTEXT "EarthBound Music Editor\r\n"
-		"v2.5.0\r\n", 0,
+	LTEXT "EarthBound Music Editor\r\nv2.5.0\r\n", 0,
 		5, 5, 170, 55
 	CONTROL "https://github.com/PKHackers/ebmused/", IDC_HOMEPAGELINK, "Static", SS_NOTIFY | WS_GROUP | WS_TABSTOP,
 		5, 30, 170, 8

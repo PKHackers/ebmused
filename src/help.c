@@ -147,11 +147,12 @@ LRESULT CALLBACK CodeListWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 static WNDPROC HomepageLinkWndProc;
 static LRESULT CALLBACK HomepageLinkProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg) {
-		case WM_SETCURSOR:
+		case WM_SETCURSOR: {
 			HCURSOR hCursor = LoadCursor(NULL, IDC_HAND);
 			if (NULL == hCursor) hCursor = LoadCursor(NULL, IDC_ARROW);
 			SetCursor(hCursor);
 			return TRUE;
+		}
 	}
 
 	return CallWindowProc(HomepageLinkWndProc, hWnd, uMsg, wParam, lParam);
@@ -159,7 +160,7 @@ static LRESULT CALLBACK HomepageLinkProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 
 BOOL CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch(uMsg) {
-		case WM_INITDIALOG:
+		case WM_INITDIALOG: {
 			HWND hwndLink = GetDlgItem(hWnd, IDC_HOMEPAGELINK);
 			HomepageLinkWndProc = (WNDPROC)SetWindowLongPtr(hwndLink, GWLP_WNDPROC, (LONG_PTR)HomepageLinkProc);
 
@@ -173,6 +174,7 @@ BOOL CALLBACK AboutDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 			SetTextColor(hwndLink, RGB(0, 0, 192));
 
 			break;
+		}
 		case WM_COMMAND:
 			switch(LOWORD(wParam)) {
 				case IDC_HOMEPAGELINK:
