@@ -232,7 +232,7 @@ static short initial_env_height(BOOL adsr_on, unsigned char gain) {
 	if (adsr_on || (gain & 0x80))
 		return 0;
 	else
-		return (gain & 0x7F) * 16 / 0x800;
+		return (gain & 0x7F) * 16;
 }
 
 void initialize_envelope(struct channel_state *c) {

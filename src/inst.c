@@ -225,7 +225,7 @@ static LRESULT CALLBACK InstListWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 	// so pressing 0 or 2 doesn't move the selection around
 	else if (uMsg == WM_CHAR)
 		return 0;
-	
+
 	return CallWindowProc(ListBoxWndProc, hWnd, uMsg, wParam, lParam);
 }
 
@@ -339,8 +339,8 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		unsigned char *p = valid_insts;
 		for (int i = 0; i < MAX_INSTRUMENTS; i++) { //filling out the Instrument Config ListBox
 			unsigned char *inst = &spc[inst_base + i*6];
-			if (!samp[inst[0]].data
-				|| inst[0] >= 128
+			if (inst[0] >= 128
+				|| !samp[inst[0]].data
 				|| (inst[4] == 0 && inst[5] == 0)) continue;
 			//            Index ADSR            Tuning
 			sprintf(buf, "%02X: %02X %02X %02X  %02X%02X",
@@ -399,7 +399,14 @@ LRESULT CALLBACK InstrumentsWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 					int sel = SendMessage((HWND)lParam, LB_GETCURSEL, 0, 0);
 					struct channel_state *c = &state.chan[0];
 					set_inst(&state, c, valid_insts[sel]);
-					format_status(0, "ADSR: %02d/15  %d/7  %d/7  %02d/31", c->inst_adsr1 & 0xF, (c->inst_adsr1 >> 4) & 0x7, (c->inst_adsr2 >> 5) & 7, c->inst_adsr2 & 0x1F);
+					if (c->inst_adsr1 & 0x80) {
+						format_status(0, "ADSR: %02d/15  %d/7  %d/7  %02d/31", c->inst_adsr1 & 0xF, (c->inst_adsr1 >> 4) & 0x7, (c->inst_adsr2 >> 5) & 7, c->inst_adsr2 & 0x1F);
+					} else if (c->inst_gain & 0x80) {
+						format_status(0, "Direct Gain: %d/127", c->inst_gain & 0x7F);
+					} else {
+						static const char *gain_modes[] = { "Linear Decrease", "Exponential Decrease", "Linear Increase", "Bent Increase" };
+						format_status(0, "%s Gain: %d/31", gain_modes[(c->inst_gain >> 5) & 3], c->inst_gain & 0x1F);
+					}
 				}
 				break;
 		}
