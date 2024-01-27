@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <commctrl.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 void format_status(int part, const char* format, ...) {
 	if (hwndStatus) {
