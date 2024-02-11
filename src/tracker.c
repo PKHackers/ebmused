@@ -1190,18 +1190,29 @@ void editor_command(int id) {
 	case ID_TRANSPOSE: {
 		int delta = DialogBox(hinstance, MAKEINTRESOURCE(IDD_TRANSPOSE),
 			hwndMain, TransposeDlgProc);
-		if (delta == 0) break;
-		for (BYTE *p = sel_start; p < sel_end; p = next_code(p)) {
-			int note = *p - 0x80;
-			if (note < 0 || note >= 0x48) continue;
-			note += delta;
-			note %= 0x48;
-			if (note < 0) note += 0x48;
-			*p = 0x80 + note;
+		if (delta != 0) {
+			for (BYTE *p = sel_start; p < sel_end; p = next_code(p)) {
+				if (*p == 0xF9) {
+					// F9 is a pitch bend to a specific note.
+					// To make transpose a reversible operation and prevent unwanted consequences,
+					// don't wrap around from B6 to C1 for these commands. (The composer might've
+					// used a note outside of that range.)
+					p[3] += delta;
+				} else if (*p >= 0x80 && *p < 0xC8) {
+					// This is a command to play a given note
+					int note = *p - 0x80;
+					note += delta;
+					// Wrap around note commands, so that transposing C1 one semitone down yields
+					// a B6
+					note %= 0x48;
+					if (note < 0) note += 0x48;
+					*p = 0x80 + note;
+				}
+			}
+			cur_song.changed = TRUE;
+			show_track_text();
+			InvalidateRect(hwndTracker, NULL, FALSE);
 		}
-		cur_song.changed = TRUE;
-		show_track_text();
-		InvalidateRect(hwndTracker, NULL, FALSE);
 		break;
 	}
 	case ID_ZOOM_IN:
