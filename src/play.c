@@ -216,7 +216,7 @@ static void do_command(struct song_state *st, struct channel_state *c) {
 			break;
 		case 0xF9: {
 			c->cur_port_start_ctr = p[1];
-			int target = p[3] + st->transpose;
+			int target = p[3] + (unsigned char)st->transpose;
 			if (target >= 0x100) target -= 0xFF;
 			target += c->transpose;
 			make_slider(&c->note, p[2], target & 0x7F);
